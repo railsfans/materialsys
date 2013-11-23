@@ -1,0 +1,21 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/Fixtures.html
+
+one:
+  code: MyString
+  partnum: MyString
+  quantity: 1
+  name: MyString
+  date: MyString
+  comment: MyString
+  footprint: MyString
+  record_id: 1
+
+two:
+  code: MyString
+  partnum: MyString
+  quantity: 1
+  name: MyString
+  date: MyString
+  comment: MyString
+  footprint: MyString
+  record_id: 1

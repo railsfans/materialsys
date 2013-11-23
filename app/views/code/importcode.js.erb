@@ -1,0 +1,68 @@
+var  upload =new Ext.create('Ext.form.Panel', {
+        width: 500,
+        frame: true,
+        title: '<%= t('import code excel') %>',
+        bodyPadding: '10 10 0',
+        height: 300,
+        defaults: {
+            anchor: '100%',
+            allowBlank: false,
+            msgTarget: 'side',
+            labelWidth: 70
+        },
+        items: [
+        {
+            xtype: 'filefield',
+            emptyText: '<%= t('select file') %>',
+            fieldLabel: '<%= t('filelocation') %>',
+            name: 'file',
+            buttonText: '',
+            buttonConfig: {
+                iconCls: 'upload-icon'
+            },
+            regex: /(.)+((\.csv)|(\.xls)(\w)?)$/i,
+            regexText: '<%= t('wrong file type') %>'
+        }],
+        buttonAlign:"center",
+        buttons: [{
+            text: '<%= t('save') %>',
+            handler: function(){
+               var form = this.up('form').getForm();
+                if(form.isValid()){
+                    form.submit({
+                        url: 'code/codein.json',
+                        waitMsg: '<%= t('uploading') %>',
+                        success: function(fp, o) {
+                          show_tip_message(o.result.message+'<%= t(:uploadsuccess) %>');
+                          form.reset();
+			  			  code_window.close();
+                        },
+                        failure: function(fp, o){
+                           show_tip_message(o.result.arr);
+                        }
+                    });
+                }
+             
+            }
+        },{
+            text: '<%= t('reset') %>',
+            handler: function() {
+                this.up('form').getForm().reset();
+            }
+            }]
+    });
+
+  var code_window = new Ext.Window({
+        iconCls:"silk-add",
+        width:280,
+        height:180,
+        resizable:false,
+        layout:"fit",
+        closeAction:'close',
+        plain: true,
+        constrainHeader:true,
+        modal:true,
+        bodyStyle: 'padding:5px;',
+        items:[upload]
+    });
+code_window.show();

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Materialsys</title>
+  <%= stylesheet_link_tag    "application", :media => "all" %>
+  <%= javascript_include_tag "application" %>
+  <%= csrf_meta_tags %>
+</head>
+<style>
+#home-page {
+	background: #DCDDDF url(assets/blue.jpg);
+}
+</style>
+<body onload=window_onload()>
+<div id="header">
+  <%= render :partial => "layouts/header" %>
+</div>
+<div id="menu">
+  <%= render :partial => "layouts/menu" %>
+</div>
+<div id="footer">
+  <%= render :partial => "layouts/footer" %>
+</div>
+<div id="home-page">
+  <%= yield %>
+</div>
+</body>
+</html>

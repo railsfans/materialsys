@@ -1,0 +1,194 @@
+/*
+ * This is a manifest file that'll be compiled into application.css, which will include all the files
+ * listed below.
+ *
+ * Any CSS and SCSS file within this directory, lib/assets/stylesheets, vendor/assets/stylesheets,
+ * or vendor/assets/stylesheets of plugins, if any, can be referenced here using a relative path.
+ *
+ * You're free to add application-wide styles to this file and they'll appear at the top of the
+ * compiled file, but it's generally better to create a new file per style scope.
+ *
+ *= require_self
+ *= require_tree .
+ */
+a {
+    text-decoration:none;
+}
+p {
+    margin:5px;
+}
+.settings {
+    background-image:url(shared/icons/fam/folder_wrench.png);
+}
+.nav {
+    background-image:url(shared/icons/fam/folder_go.png);
+}
+.info {
+    background-image:url(shared/icons/fam/information.png);
+}
+ 
+.ss {
+    background-image:url(shared/icons/fam/cog.png);
+}
+.yy {
+    background-image:url(shared/icons/fam/connect.png);
+}
+.left-menu {
+    padding-top: 5px;
+//    background: #DFE8F6;
+}
+.left-menu a:link, .left-menu a:visited {
+    background: url("menu_shortcuts_bg.png") repeat scroll 0 0 transparent;
+    display: block;
+    height: 60px;
+    margin: 0 auto 5px;
+    overflow: hidden;
+    text-align: center;
+    width: 60px;
+}
+.left-menu a:hover, .left-menu a:active {
+    background: url("menu_shortcuts_bg_hover.png") repeat scroll 0 0 transparent;
+    color: #15428B;
+}
+.left-menu a.selected {
+    background: url("menu_shortcuts_bg_hover.png") repeat scroll 0 0 transparent;
+    color: #15428B;
+    cursor: default;
+}
+.left-menu a .menu-icon {
+    margin: 4px 2px 2px;
+    
+}
+.left-menu  .menu-text {
+    font-size: 12px;
+    color: #000000;   
+}
+
+
+
+#search-results a {
+        color: #385F95;
+        font:bold 11px tahoma, arial, helvetica, sans-serif;
+        text-decoration:none;
+}
+
+#search-results a:hover {
+        text-decoration:underline;
+}
+
+#search-results p {
+        margin:3px !important;
+}
+
+.search-item {
+        font:normal 11px tahoma, arial, helvetica, sans-serif;
+        padding:3px 10px 3px 10px;
+        border:1px solid #fff;
+        border-bottom:1px solid #eeeeee;
+        white-space:normal;
+        color:#555;
+}
+.search-item h3 {
+        display:block;
+        font:inherit;
+        font-weight:bold;
+        color:#222;
+}
+
+.search-item h3 span {
+        float: right;
+        font-weight:normal;
+        margin:0 0 5px 5px;
+        width:100px;
+        display:block;
+        clear:none;
+}
+
+.x-form-clear-trigger {
+        background-image: url(resources/themes/images/default/form/clear-trigger.gif);
+}
+
+.x-form-search-trigger {
+        background-image: url(resources/themes/images/default/form/search-trigger.gif);
+}
+        
+.bomcost { background-image: url(shared/icons/fam/add.png) !important; background-repeat: no-repeat; }  
+     
+.silk-user_add { background-image: url(shared/icons/fam/user_add.png) !important; background-repeat: no-repeat; }
+
+.silk-user_delete { background-image: url(shared/icons/fam/user_delete.png) !important; background-repeat: no-repeat; }
+
+.silk-user_edit { background-image: url(shared/icons/fam/user_edit.png) !important; background-repeat: no-repeat; }
+
+.silk-zoom { background-image: url(shared/icons/fam/zoom.png) !important; background-repeat: no-repeat; }
+
+.upload-icon {
+            background: url('shared/icons/fam/image_add.png') no-repeat 0 0 !important;
+        }
+
+      
+.special-css { color:#222; text-decoration:underline; font:bold 11px tahoma, arial, helvetica, sans-serif;}
+
+#header { padding: 5px; }
+#header #logo { font-size: 15px; float: left;text-shadow:#CCCCCC 0 4px 1px; }
+#header #logo span { color:#15428B; font-size: 22px; font-weight: bold }
+#header #login-info{ float: right; margin: 5px 10px 0px 0px;}
+#header #login-info a:link,#header #login-info a:visited{ color: #15428B}
+#header #login-info a:hover,#header #login-info a:active{ text-decoration: none}
+#system-info-box { width:650px; margin:20px auto; }
+#system-info-title div { margin-bottom:15px; }
+#system-info-box li {  list-style:inside disc; margin-bottom:15px;font-size:16px}
+
+
+#footer { color: #15428B;}
+#footer #copy-right { float:left;color: #15428B;}
+#footer #system_info { float:right;}
+
+
+
+
+
+* {font-family: "微软雅黑","宋体",Verdana, Arial, Helvetica, sans-serif !important;}
+body { font-size: 12px; color: #222222;background:#DFE8F6 }
+a:link, a:visited, a:hover, a:active { color: #222222; text-decoration: none }
+
+
+.color-gray{ color: #DBCCDB}
+.color-blue{ color: #15428B}
+.font-bold { font-weight:bold }
+.font-size14 { font-size:14px; }
+.font-size18 { font-size:18px; }
+.font-size22 { font-size:22px; }
+.font-size24 { font-size:24px; }
+
+.startbutton {
+background-image: url('shared/icons/fam/image_add.png') !important;
+}
+.bombutton {
+background-image: url('shared/icons/fam/folder_go.png') !important;
+}
+.icon-print {
+background-image: url('printer.png') !important;
+}
+
+.rowbodyColor{
+  		background-color : #FFFFCC;
+  	}
+.child-row .x-grid-cell { 
+    background-color: #ffe2e2; 
+    color: #900; 
+} 
+ 
+.adult-row .x-grid-cell { 
+    background-color: #e2ffe2; 
+    color: #090; 
+}
+
+.silk-database_go { background-image: url(silk/database_go.png) !important; background-repeat: no-repeat; }
+.silk-database_delete { background-image: url(silk/database_delete.png) !important; background-repeat: no-repeat; }
+.silk-database_error { background-image: url(silk/database_error.png) !important; background-repeat: no-repeat; }
+.silk-database_add { background-image: url(silk/database_add.png) !important; background-repeat: no-repeat; }
+.silk-lorry { background-image: url(silk/lorry.png) !important; background-repeat: no-repeat; }
+.silk-plugin_edit { background-image: url(silk/plugin_edit.png) !important; background-repeat: no-repeat; }
+.silk-cancel { background-image: url(silk/cancel.png) !important; background-repeat: no-repeat; }
+.silk-disk { background-image: url(silk/disk.png) !important; background-repeat: no-repeat; }

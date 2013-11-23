@@ -1,0 +1,5 @@
+ruby or php ²ÎÊýµü´ú
+
+params: form.getForm().getValues(true,false,false,false),
+
+if(i){m=Ext.Object.toQueryString(m,true)}return m

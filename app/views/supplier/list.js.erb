@@ -1,0 +1,379 @@
+﻿Ext.Ajax.defaultHeaders = { 'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content') };
+Ext.regModel('BookInfo', {
+	fields: [{name: 'company'}, {name: 'id'}]
+});
+var bookStore = Ext.create('Ext.data.Store',{
+	model : 'BookInfo',
+	proxy: {
+		type: 'ajax',
+		url: 'supplier/material.json',
+	reader: {
+   		type: 'json',
+    	root: 'gridData'
+	},
+	extraParams : {
+    
+    }
+	},
+});
+
+function supplier_action_handler(type) {
+	var form = new Ext.form.Panel({
+		baseCls: 'x-plain',
+		labelWidth: 60,
+		border:false,
+		layout:"form",
+		items: [
+			{xtype:"hidden",name: "id"},
+			{xtype:"textfield",fieldLabel: '<%= t('list') %>',name: "number",allowBlank:false, anchor:'95%'},
+			{xtype:"textfield",fieldLabel: '<%= t('company') %>',name: "company",allowBlank:false, anchor:'95%'}, 
+			{xtype:"textfield",fieldLabel: '<%= t('address') %>', name: "address",anchor:'95%'},
+			{xtype:"textfield",fieldLabel: '<%= t('website') %>', name: "website",anchor:'95%'},
+			{xtype:"textfield",fieldLabel: '<%= t('contactor') %>',name: "contactor",allowBlank:false,anchor:'95%'},
+			{xtype:"textfield",fieldLabel: '<%= t('phone') %>', name: "phone",anchor:'95%'},
+			{xtype:"textfield",fieldLabel: '<%= t('fax') %>',name: "fax",anchor:'95%'},
+			{xtype:"textfield",fieldLabel: '<%= t('email') %>', name: "email",anchor:'95%'},
+			{xtype:"textarea",fieldLabel: '<%= t('materiallist') %>',name: "material",anchor:'95%'},      
+			{xtype:"textarea",fieldLabel: '<%= t('comment') %>',name: "comment",anchor:'95%'}                 
+		],
+		buttonAlign:"center",        
+		buttons: [
+		{
+			text: '<%= t('save') %>',
+			handler:function() {                   
+			if (form.getForm().isValid()) {
+				switch (type) {
+				case "add":                     
+				Ext.Ajax.request({
+					url: 'supplier/supplier_add',
+					params: form.getForm().getValues(true,false,false,false),
+					success: function(response){
+						var obj = Ext.decode(response.responseText);
+						if (obj.success) {
+							edit_window.close();
+							m_store.reload();
+						} else {
+						show_tip_message("supplier repeat")
+						}
+					},
+					failure: function(response) {
+						show_tip_message("network false")
+					}                
+				});
+				break;
+				case "edit": 
+				Ext.Ajax.request({
+					url: 'supplier/supplier_edit',
+					params: form.getForm().getValues(true,false,false,false),
+					success: function(response){
+					var obj = Ext.decode(response.responseText);
+					if (obj.success) {
+						edit_window.close();
+						m_store.reload();
+					} else {
+						show_tip_message("code repeat")
+					}	
+					},
+					failure: function(response) {
+						show_tip_message("false")
+					}                
+				});
+				break;
+				}     //switch
+				}       //form
+			}      //handler 
+			},         
+			{
+				text: '<%= t('cancel') %>',
+				handler:function() {
+					edit_window.close()
+				}
+			}
+			]
+			});
+		var edit_window = new Ext.Window({
+			width:380,
+			height:480,
+			resizable:false,
+			layout:"fit",
+			closeAction:'close',
+			plain: true,
+			constrainHeader:true,
+			modal:true,
+			bodyStyle: 'padding:5px;',
+			items:[form]
+		});
+	var rows = m_codegrid.getSelectionModel().getSelection();
+    if (type == "add") {
+		edit_window.show();
+		edit_window.setTitle('<%= t('add supplier') %>');
+    }  else if(type == "edit"){
+			if(rows.length==1){
+				form.getForm().setValues({
+				id:rows[0].get("id"),
+				number: rows[0].get("number"),
+				company:rows[0].get("company"),
+				address: rows[0].get("address"),
+				website: rows[0].get("website"),
+				contactor: rows[0].get("contactor"),
+				fax: rows[0].get("fax"),
+				phone: rows[0].get("phone"),
+				email: rows[0].get("email"),
+				comment: rows[0].get("comment"),
+				material: rows[0].get('material')
+			});
+				edit_window.show();
+				edit_window.setTitle('<%= t('edit supplier') %>');
+			}
+			else if(rows.length>1)
+			{
+				show_tip_message('<%= t('chose one more data') %>')
+			}
+			else {
+				show_tip_message('<%= t('choseadata') %>')
+			}
+	}
+	else
+	{
+		if(rows.length!=0){
+		var delete_id="";
+		for(var i=0; i<rows.length; i++){
+		delete_id+=rows[i].get("id");
+		if(i!=rows.length-1){
+		    delete_id+=",";
+		}
+		};
+		Ext.MessageBox.confirm('<%= t('delete') %>', '<%= t('are you sure') %>', function(btn){
+			if(btn === 'yes'){
+				Ext.Ajax.request({
+					url: 'supplier/supplier_delete',
+					params: { id : delete_id },
+					success: function(response){
+					var obj = Ext.decode(response.responseText);
+						if (obj.success) {
+							m_store.reload();
+						} else {
+							show_tip_message("false")
+						}
+					},
+					failure: function(response) {
+						show_tip_message("false")
+					}                
+					});
+			}
+			else{
+			}
+		});
+		}
+	else
+	{
+		show_tip_message('<%= t('choseadata') %>')
+	}
+	}
+}
+
+function supplier_search(type){
+    if(type=="search"){
+        if(true){
+            Ext.getCmp("clear_supplier_button").enable();
+            m_store.load({
+			    params:{
+                  value: Ext.getCmp('search_supplier').getValue(),
+                  type: Ext.getCmp('search_code').getValue()
+					    }
+              });
+        }else{
+            show_tip_message("enter something")
+        }
+    }else if(type=="clear"){
+        Ext.getCmp("clear_supplier_button").disable();
+        Ext.getCmp('search_supplier').setValue('');
+        m_store.load({
+		    params:{
+		        start:0,
+		        limit: 10,
+		       
+		    }
+        });
+    }
+}
+Ext.regModel('PostInfo', {
+		    fields: [{name: 'key'},{name: 'value'}]
+		});	
+var postStore = Ext.create('Ext.data.Store',{
+	model : 'PostInfo',
+	data : [
+		{key:'<%= t('all') %>',value:'100000'},
+		{key:'<%= t('company') %>',value:'101100'},
+        {key:'<%= t('material') %>',value:'102200'},
+		{key:'<%= t('contactor') %>',value:'103300'},
+        {key:'<%= t('address') %>',value:'104400'},
+	]
+	});	
+var m_itemsPerPage = 20;   // set the number of items you want per page
+var m_store = Ext.create('Ext.data.Store', {
+	    id:'simpsonsStore',
+	    autoLoad: false,
+	    fields:['company','address', 'website', 'contactor', 'fax', 'phone','email','comment','material','number'],
+	    pageSize: m_itemsPerPage, // items per page
+	    proxy: {
+	        type: 'ajax',
+	        url: 'supplier/lists.json',  // url that will load data with respect to start and limit params
+	        extraParams : {
+                  value1 : <%= params[:value1].nil? ? 0 : params[:value1] %>,
+                  value2 : <%= params[:value2].nil? ? 0 : params[:value2] %>,
+                  search_type: <%= params[:search_type].nil? ? 0 : params[:search_type] %>
+                },
+	        reader: {
+	            type: 'json',
+	            root: 'gridData',
+	            totalProperty: 'totalCount'
+	        }
+	    },
+	    listeners: {
+	        add : function(s, r, i){
+	            console.log(r)  
+	           Ext.fly(m_codegrid.getView().getNode(0)).highlight("0000ff", { attr: 'color', duration: 5000 });
+	        }
+	    }  
+		});
+		// specify segment of data you want to load using params
+		m_store.load({
+		    params:{
+		        start:0,
+		        limit: m_itemsPerPage,
+		    }
+		});
+				
+var m_codegrid=Ext.create('Ext.grid.Panel', {
+    title: '<%= t('supplierlist') %>',
+    store: m_store,
+        plugins: [{
+            ptype: 'rowexpander',
+            rowBodyTpl : [
+                '<p><b><%= t('comment') %>:</b> {comment}</p><br>'
+            ]
+        }],
+        collapsible: true,
+        animCollapse: false,
+        viewConfig: {stripeRows: false, trackOver:true, enableTextSelection: true},
+        columns: [
+         { header: '<%= t('supplierlist') %>', dataIndex: 'number', flex: 1,align: 'center', renderer: function (value, meta, record) {
+			if (record.get('number')=='0') {
+			return '';
+			} else {
+			return  record.get('number');
+			}
+		}},
+		{ header: '<%= t('company') %>', dataIndex: 'company', flex: 1,align: 'center', renderer: function (value, meta, record) {
+            if (record.get('email')==null) {
+			return '';
+			} else {
+			  	var max = 10;
+                meta.tdAttr = 'data-qtip="' + value + '"';
+                return value.length < max ? value : value.substring(0, max) + '...';
+			}      
+        }},
+		{ header: '<%= t('material') %>',  dataIndex: 'material' , flex: 1, align: 'center', renderer: function (value, meta, record) {
+            if (record.get('material')==null) {
+			return '';
+			} else {
+			  var max = 10;
+                    meta.tdAttr = 'data-qtip="' + value + '"';
+                    return value.length < max ? value : value.substring(0, max) + '...';
+			}    
+        }},
+		{ header: '<%= t('address') %>',  dataIndex: 'address', flex: 1 ,align: 'center', renderer: function (value, meta, record) {
+            if (record.get('address')==null) {
+			return '';
+			} else {
+			  var max = 10;
+              meta.tdAttr = 'data-qtip="' + value + '"';
+              return value.length < max ? value : value.substring(0, max) + '...';
+			}
+         }},
+		{ header: '<%= t('website') %>', dataIndex: 'website', flex: 1 ,align: 'center', renderer: function download(value,meta,record){return "<a href='http://"+record.get('website')+"'>"+value+"</a>"; }},
+		{ header: '<%= t('contactor') %>', dataIndex: 'contactor', flex: 1,align: 'center' },
+		{ header: '<%= t('fax') %>',  dataIndex: 'fax', flex: 1 ,align: 'center', renderer: function (value, meta, record) {
+            if (record.get('fax')==null) {
+			return '';
+			} else {
+			  var max = 10;
+              meta.tdAttr = 'data-qtip="' + value + '"';
+              return value.length < max ? value : value.substring(0, max) + '...';
+			}
+        }},
+		{ header: '<%= t('phone') %>', dataIndex: 'phone', flex: 1,align: 'center' , renderer: function (value, meta, record) {
+            if (record.get('phone')==null) {
+			return '';
+			} else {
+			  var max = 10;
+              meta.tdAttr = 'data-qtip="' + value + '"';
+              return value.length < max ? value : value.substring(0, max) + '...';
+			}
+         }},
+		{ header: '<%= t('email') %>',  dataIndex: 'email', flex: 1 ,align: 'center', renderer: function (value, meta, record) {
+            if (record.get('email')==null) {
+			return '';
+			} else {
+			  var max = 10;
+              meta.tdAttr = 'data-qtip="' + value + '"';
+              return value.length < max ? value : value.substring(0, max) + '...';
+			}
+         }}, 
+	],
+	width: 400,
+	height: 125,
+	multiSelect : true,
+	selType: 'rowmodel',
+	dockedItems: [{
+	xtype: 'pagingtoolbar',
+	store: m_store,   // same store GridPanel is using
+	dock: 'bottom',
+	displayInfo: true,   
+	items:[
+        '-',
+        { text: '<%= t('add') %>', iconCls:"silk-user_add", handler: function() {
+                supplier_action_handler("add")
+        }},
+        { text: '<%= t('edit') %>', iconCls:"silk-user_edit", handler: function() {
+                supplier_action_handler("edit")
+        }},
+        { text: '<%= t('delete') %>', iconCls:"silk-user_delete", handler: function() {
+                supplier_action_handler("delete")
+        }},
+		{
+			id:"search_code",
+			width: 120,
+			xtype : 'combo',
+			listConfig : {
+				emptyText : 'no match data', 
+				maxHeight : 120 
+			},
+			name:'post',
+			autoSelect : true,
+			triggerAction: 'all', 
+			store : postStore, 
+			displayField:'key', 
+			valueField:'value', 
+			queryMode: 'local', 
+			forceSelection : true, 
+			typeAhead : true, 
+			value:'100000',
+		},
+		{
+	    	xtype: 'textfield',
+	    	hideLabel: true,
+	    	width: 150,
+	    	id: "search_supplier",
+	    },
+		{ text: '<%= t('search') %>',id:"search_supplier_button", iconCls:"silk-zoom", handler:function(){supplier_search("search")} },
+        { text: '<%= t('clear') %>', id:"clear_supplier_button", disabled:true, handler: function(){supplier_search("clear")} }
+        ]       
+}],
+});
+
+	var m_work_space = Ext.getCmp('work-space');
+	m_work_space.removeAll();
+	m_work_space.add(m_codegrid);
+	m_work_space.doLayout();

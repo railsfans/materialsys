@@ -1,0 +1,19 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/Fixtures.html
+
+one:
+  name: MyString
+  code: MyString
+  parent_id: 1
+  footprint: MyString
+  partnum: MyString
+  flocation: MyString
+  partparams: MyString
+
+two:
+  name: MyString
+  code: MyString
+  parent_id: 1
+  footprint: MyString
+  partnum: MyString
+  flocation: MyString
+  partparams: MyString

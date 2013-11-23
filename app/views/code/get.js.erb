@@ -1,0 +1,152 @@
+Ext.Ajax.defaultHeaders = { 'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content') };
+var form = new Ext.form.Panel({
+      baseCls: 'x-plain',
+      labelWidth: 60,
+      border:false,
+      layout:"form",
+      items: [
+          {xtype:"hidden",name: "id", value: record.get('id')},
+          {xtype:"hidden",name: "parent_id", value: record.get('parent_id')},
+          {xtype:"textfield",fieldLabel: '<%= t('name') %>', name: "name",allowBlank:false,anchor:'95%'},
+      ],
+      buttonAlign:"center",     
+      buttons: [
+          {
+              text: '<%= t('save') %>',
+              handler:function() {     
+                  if (form.getForm().isValid()) {
+                  	switch (type) {
+                    case "add":
+	                   Ext.Ajax.request({
+							    url: 'code/node_add',
+							    params: form.getForm().getValues(),
+							    success: function(response){
+							       var obj = Ext.decode(response.responseText);
+			                        if (obj.success) {
+			                             edit_window.close();
+			                             myStore.load();
+			                        } else {
+			                            if (record.get('parent_id')==''){
+			                            show_tip_message('<%= t('enter same code one degree') %>')}
+			                            else{
+			                            show_tip_message('<%= t('enter same code two degree') %>')
+			                             }
+			                        }
+			                        },
+			                    failure: function(response) {
+			                            show_tip_message('<%= t('net failure') %>')
+			                        }                
+			                    });
+			                    break;   
+                    case "edit":
+                      Ext.Ajax.request({
+							    url: 'code/node_edit',
+							    params: form.getForm().getValues(),
+							    success: function(response){
+							       var obj = Ext.decode(response.responseText);
+			                        if (obj.success) {
+			                             edit_window.close();
+			                             myStore.load();
+			                        } else {
+		                                    if (record.get('parent_id')==1){
+			                            show_tip_message('<%= t('enter same code one degree') %>')
+		                                    }
+		                                    else {
+		                                     show_tip_message('<%= t('enter same code two degree') %>')  
+		                                    }
+			                        }
+		                          },
+			                      failure: function(response) {
+			                              show_tip_message("false")
+			                          }                
+			                      });
+			                    break;
+			                  }       //switch
+			                 }       //form
+		                 }      //handler 
+		           },                    
+		          {
+		              text: '<%= t('cancel') %>',
+		              handler:function() {
+		                  edit_window.close()
+		              }
+		          }
+		      ]
+		      });
+  var edit_window = new Ext.Window({
+      width:380,
+      height:270,
+      resizable:false,
+      layout:"fit",
+      closeAction:'close',
+      plain: true,
+      constrainHeader:true,
+      modal:true,
+      bodyStyle: 'padding:5px;',
+      items:[form]
+  });
+
+   var firstField = new Ext.form.TextField({
+    fieldLabel: '<%= t('first code') %>',name: "code",anchor:'95%', regex : /^(\d{2})$/,
+  					   regexText:'<%= t('only enter two number') %>'
+  }); 
+   var secondField = new Ext.form.TextField({
+    fieldLabel: '<%= t('second code') %>',name: "code",anchor:'95%', regex : /^(\d{2})$/,
+  					   regexText:'<%= t('only enter two number') %>'
+  }); 
+
+   if (type == "add") {
+	    if (record.get('parent_id')!=1 && record.get('parent_id')!='')
+	    	alert("you can't add");
+	    else if(record.get('parent_id')==''){
+	    	form.add(firstField)
+	    }
+	    else {
+	    	form.add(secondField)
+	    }
+	    edit_window.show();
+	    edit_window.setTitle('<%= t('add node') %>');
+    } 
+    else if(type == "edit"){  
+	    if(record.get('parent_id')==1){
+	    	form.add(firstField)
+	     }
+	     else{
+	      	form.add(secondField)
+	     }
+	     form.getForm().setValues({
+	            name:record.get('name'),
+	            code:record.get('code')
+	     });
+	     edit_window.show();
+	     edit_window.setTitle('<%= t('edit node') %>');
+     }
+     else { 
+         Ext.MessageBox.confirm('<%= t('delete') %>', '<%= t('are you sure') %>', function(btn){
+		 	if(btn === 'yes'){
+				  Ext.Ajax.request({
+				    url: 'code/node_delete',
+				    params: { id : record.get('id') },
+				    success: function(response){
+				       var obj = Ext.decode(response.responseText);
+	                      if (obj.success) {
+	                            myStore.load();
+	                            var work_space = Ext.getCmp('work-space');
+								work_space.removeAll();
+								work_space.doLayout();
+	                      } else {
+	                          show_tip_message("false")
+	                      }
+	                      },
+	                  failure: function(response) {
+	                          show_tip_message("false")
+	                      }                
+	                 });
+				   }
+				   else{
+			
+				   }
+				 });
+    }
+   
+  

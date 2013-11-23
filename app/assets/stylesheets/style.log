@@ -1,0 +1,8 @@
+.x-column-header  15px
+.x-grid-row-alt  FFA54F
+.x-grid-row-over .x-grid-rowwrap-div{border-color:#f00;  //.x-grid-row-over .x-grid-rowwrap-div{border-color:#ddd
+.x-column-header{padding:0;position:absolute;overflow:hidden;border-right:2px solid #D02090;
+.x-grid-row .x-grid-cell{color:null;font:normal 11px/15px tahoma,arial,verdana,sans-serif;background-color:white;border-color:#1C86EE;
+.x-toolbar .x-toolbar-item{margin:0 2px 0 0}.x-toolbar .x-toolbar-text{margin-left:4px;margin-right:6px;white-space:nowrap;color:#4c4c4c;line-height:16px;font-family:tahoma,arial,verdana,sans-serif;font-size:18px;font-weight:normal}
+.x-panel-header-text-default{color:#04408c;font-size:13px;
+.x-column-header-inner  line-height:15px;padding:3px 6px 2px

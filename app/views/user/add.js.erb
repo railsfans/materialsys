@@ -1,0 +1,246 @@
+Ext.Ajax.defaultHeaders = { 'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content') };
+Ext.regModel('RoleInfo', {
+		    fields: [{name: 'province'},{name: 'post'}]
+		});
+var roleStore = Ext.create('Ext.data.Store',{
+			model : 'RoleInfo',
+			data : [
+				{province:'<%= t('root') %>',post:'102200'},
+				{province:'<%= t('ordinary') %>',post:'102600'}
+			]
+		});		 
+function user_action_handler(type) {
+    var form = new Ext.form.Panel({
+        id: 'formss',
+        baseCls: 'x-plain',
+        labelWidth: 60,
+        border:false,
+        layout:"form",
+        items: [
+            {xtype:"hidden",name: "user_id", value: '<%=current_user.id %>' },
+            {xtype:"hidden",name: "user_role", value: '<%=current_user.role %>' },
+            {xtype:"textfield",fieldLabel: '<%= t(:username) %>', name: "username",anchor:'95%'},
+            {xtype:"textfield",fieldLabel: '<%= t(:email) %>', name: "email",allowBlank:false,anchor:'95%',vtype: 'email'},
+            {xtype:"textfield",fieldLabel: '<%= t(:password) %>', name: "password",allowBlank:false,anchor:'95%'},   
+            {xtype:"textfield",fieldLabel: '<%= t(:password_confirmation) %>', name: "password_confirmation",allowBlank:false,anchor:'95%'},
+			{
+				xtype : 'combo',
+				listConfig : {
+					emptyText : 'no match', 
+					maxHeight : 60 
+				},
+				name:'role',
+				autoSelect : true,
+				fieldLabel:'<%= t('chose role') %>',
+				triggerAction: 'all', 
+				store : roleStore, 
+				displayField:'province', 
+				valueField:'post', 
+				queryMode: 'local', 
+				forceSelection : true, 
+				typeAhead : true, 
+				value:'102600' 
+			}
+        ],
+        buttonAlign:"center",
+        buttons: [
+            {
+                text: '<%= t('save') %>',
+                handler:function() {
+                    if (form.getForm().isValid()) {
+                      switch (type) {
+                      case "add":
+	                     Ext.Ajax.request({
+						    url: 'user/user_add',
+						    params: form.getForm().getValues(true,false,false,false),
+						    success: function(response){
+						       var obj = Ext.decode(response.responseText);
+		                        if (obj.success) {
+		                             edit_window.close();
+		                             store.reload();
+		                             
+		                        } else {
+		                            show_tip_message('<%= t('material exist') %>')
+		                        }
+	                          },
+	                      	failure: function(response) {
+	                              show_tip_message("false")
+	                          }                
+	                      });
+                      break;
+                      case "edit": 
+	                       Ext.Ajax.request({
+						    url: 'user/user_edit',
+						    params: form.getForm().getValues(true,false,false,false),
+						    success: function(response){
+						       var obj = Ext.decode(response.responseText);
+		                        if (obj.success) {
+		                             edit_window.close();
+		                             store.reload();
+		                        } else {
+		                            show_tip_message("false")
+		                        }
+	                          },
+	                      	failure: function(response) {
+	                              show_tip_message("false")
+	                          }                
+	                      });
+                      break;
+                      }     //switch
+                   }       //form
+                   }      //handler 
+             },       
+            {
+                text: '<%= t('cancel') %>',
+                handler:function() {
+                    edit_window.close()
+                }
+            }
+        ]
+        });
+var edit_window = new Ext.Window({
+        width:380,
+        height:200,
+        resizable:false,
+        layout:"fit",
+        closeAction:'close',
+        plain: true,
+        constrainHeader:true,
+        modal:true,
+        bodyStyle: 'padding:5px;',
+        items:[form]
+    });
+var rows = grid.getSelectionModel().getSelection();
+    if (type == "add") {
+       	edit_window.show();
+        edit_window.setTitle('<%= t('add user') %>');
+    }  else if(type == "edit"){
+		if(rows.length==1){
+     		var rolevalue;
+            if(rows[0].get("role")=='root')
+            va='<%= t('root') %>'
+            else
+            va='<%= t('ordinary') %>'
+            roleStore.each(function(rec){
+                if( rec.get('province')==va )
+                     rolevalue=rec.get('post')
+                    });
+        	form.getForm().setValues({
+                username:rows[0].get("username"),
+                email:rows[0].get("email"),
+                role:rolevalue
+            });
+           	 edit_window.show();
+           	 edit_window.setTitle('<%= t('edit user') %>');
+            }
+            else
+            {
+           	 show_tip_message('<%= t('choseadata') %>')
+             }
+        }
+        else
+        {
+                if(rows.length==1){
+                Ext.Ajax.request({
+				    url: 'user/user_delete',
+				    params: { username : rows[0].get("username"), user_id: '<%=current_user.id %>' },
+				    success: function(response){
+				       var obj = Ext.decode(response.responseText);
+	                    if (obj.success) {
+	                            store.reload();
+	                    } else {
+	                        show_tip_message("false")
+	                    }
+                    },
+	                failure: function(response) {
+	                        show_tip_message("false")
+	                    }                
+	                });
+                }
+                else
+                {
+                	show_tip_message('<%= t('choseadata') %>')
+                }
+        }
+}
+itemsPerPage = 20;   // set the number of items you want per page
+var store = Ext.create('Ext.data.Store', {
+    id:'simpsonsStore',
+    autoLoad: false,
+    fields:['username','email', 'role'],
+    pageSize: itemsPerPage, // items per page
+    proxy: {
+        type: 'ajax',
+        url: 'user/all.json',  // url that will load data with respect to start and limit params
+        reader: {
+            type: 'json',
+            root: 'gridData',
+            totalProperty: 'totalCount'
+        },
+    }  
+});
+
+// specify segment of data you want to load using params
+store.load({
+    params:{
+        start:0,
+        limit: itemsPerPage,
+    }
+});
+
+var grid=Ext.create('Ext.grid.Panel', {
+    title: '<%= t(:userlist) %>',
+    store: store,
+    columns: [
+            {
+            xtype: 'rownumberer',
+            width: 60,
+            sortable: false,
+            header: '<%= t(:list) %>', 
+            align: 'center'
+            },
+		    { header: '<%= t(:username) %>',  dataIndex: 'username', flex: 1, align: 'center' },
+		    { header: '<%= t('email') %>',  dataIndex: 'email', flex: 1, align: 'center'  },
+		    { header: '<%= t('role') %>',  dataIndex: 'role', flex: 1, align: 'center', renderer: function tohref(value,meta,record){
+		        if(value=='root')
+		        return '<%= t('root') %>'
+		        else
+		        return '<%= t('ordinary') %>'
+		    }},
+    ],
+    width: 400,
+    height: 125,
+    selType: 'rowmodel',
+    dockedItems: [{
+        xtype: 'pagingtoolbar',
+        store: store,   // same store GridPanel is using
+        dock: 'bottom',
+        displayInfo: true,   
+        items:[
+                '-',
+                { text: '<%= t('add') %>', iconCls:"silk-user_add", handler: function() {
+                    user_action_handler("add")
+                }},
+                { text: '<%= t('edit') %>', iconCls:"silk-user_edit", handler: function() {
+                    user_action_handler("edit");
+                }},
+                { text:  '<%= t('delete') %>', iconCls:"silk-user_delete", handler: function() {
+                    user_action_handler("delete")
+                }},
+                {
+			    	xtype: 'textfield',
+			    	hideLabel: true,
+			    	width: 150,
+			    	id: "search_vehicle",
+			    },
+ 				{ text: '<%= t('search') %>',id:"search_vehicle_button", iconCls:"silk-zoom", handler:function(){vehicle_search("search")} },
+                { text: '<%= t('clear') %>', id:"clear_vehicle_button", disabled:true, handler: function(){vehicle_search("clear")} }
+                ]       
+    }],
+
+});
+
+var work_space = Ext.getCmp('work-space');
+work_space.removeAll();
+work_space.add(grid);
+work_space.doLayout();

@@ -1,0 +1,72 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>materialsys</title>
+<%= stylesheet_link_tag    "application.css" %>
+<%= csrf_meta_tags %>
+<style>
+/* Reset CSS */
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, font, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	outline: 0;
+	font-size: 100%;
+	vertical-align: baseline;
+	background: transparent;
+}
+body {
+ 
+	background: #DCDDDF url(assets/blue.jpg);
+	color: #000;
+	font: 14px Arial;
+	margin: 0 auto;
+	padding: 0;
+	position: relative;
+}
+h1{ font-size:28px;}
+h2{ font-size:26px;}
+h3{ font-size:18px;}
+h4{ font-size:16px;}
+h5{ font-size:14px;}
+h6{ font-size:12px;}
+h1,h2,h3,h4,h5,h6{ color:#563D64;}
+small{ font-size:10px;}
+b, strong{ font-weight:bold;}
+a{ text-decoration: none; }
+a:hover{ text-decoration: underline; }
+</style>
+</head>
+
+<body>
+<div class="container">
+	<section id="content">
+		<%= form_tag session_path do %> 
+			<h1><%= t('login form') %></h1>
+			<div>
+				<%= text_field_tag :username, nil, :id=>'username', :placeholder=>t('username')  %>
+                                
+			</div>
+			<div>
+				<%= password_field_tag :password, nil, :id=>'password', :placeholder=>t('enterpassword') %>
+                                
+			</div>
+                        
+			<div>
+				<input type="submit" value=<%= t('login') %> /> 
+			</div>
+		<% end %>  
+	</section><!-- content -->
+</div><!-- container -->
+
+</body>
+</html>

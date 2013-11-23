@@ -1,0 +1,8 @@
+<div id="login-info">
+  <span id="result"></span>
+   &nbsp;&nbsp;&nbsp;&nbsp;
+  <span>欢迎您，<%= User.find(session[:user_id]).username %></span>
+  <span class="color-gray">|</span>
+<%= link_to t('sign_out'),logout_path %>
+</div>
+

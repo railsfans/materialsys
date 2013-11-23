@@ -1,0 +1,13 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/Fixtures.html
+
+one:
+  people: MyString
+  situ: MyString
+  rlocation: MyString
+  date: MyString
+
+two:
+  people: MyString
+  situ: MyString
+  rlocation: MyString
+  date: MyString

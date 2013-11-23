@@ -1,0 +1,68 @@
+Ext.apply(Ext.form.field.VTypes, {
+        password: function(val, field) {
+            if (field.initialPassField) {
+                var pwd = field.up('form').down('#' + field.initialPassField);
+                return (val == pwd.getValue());
+            }
+            return true;
+        },
+        passwordText: 'Passwords do not match'
+    });
+
+var form = new Ext.form.Panel({
+        baseCls: 'x-plain',
+        labelWidth: 60,
+        border:false,
+        layout:"form",
+        items: [
+            {xtype:"hidden",name: "user_id", value: <%= current_user.id %> },
+            {xtype:"textfield",fieldLabel: '<%= t('origin_password') %>',name: "origin_password",anchor:'95%', inputType: 'password',allowBlank:false},
+            { xtype:"textfield",fieldLabel: '<%= t('password') %>',name: "password",inputType: 'password',itemId: 'pass'},
+            { xtype:"textfield",fieldLabel: '<%= t('password_confirmation') %>',name: "password_confirmation", inputType: 'password',vtype: 'password',
+            initialPassField: 'pass' }    
+        ],
+        buttonAlign:"center",
+        buttons: [
+            {
+                text: '<%= t('save') %>',
+                handler:function() {
+                    if (form.getForm().isValid()) {
+                     Ext.Ajax.request({
+						    url: 'user/modify_password.json',
+						    params: form.getForm().getValues(true,false,false,false),
+						    success: function(response){
+						       var obj = Ext.decode(response.responseText);
+		                        if (obj.success) {
+		                             edit_window.close();
+		                             show_tip_message('<%= t('modify password success') %>')
+		                        } else {
+		                            show_tip_message('<%= t('origin password wrong') %>')
+		                        }
+		                        },
+		                    failure: function(response) {
+		                            show_tip_message('<%= t('net failure') %>')
+		                        }                
+		                    });
+                   }       //form
+                   }      //handler 
+             },      
+            {
+                text: '<%= t('cancel') %>',
+                handler:function() {
+                    edit_window.close()
+                }
+            }
+        ]
+        });
+var edit_window = new Ext.Window({
+    width:380,
+    height:200,
+    resizable:false,
+    layout:"fit",
+    closeAction:'close',
+    plain: true,
+    constrainHeader:true,
+    modal:true,
+    bodyStyle: 'padding:5px;',
+    items:[form]
+}).show();

@@ -1,0 +1,127 @@
+Ext.Ajax.defaultHeaders = { 'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content') };
+var form = new Ext.form.Panel({
+        id: 'formss',
+        baseCls: 'x-plain',
+        labelWidth: 60,
+        border:false,
+        layout:"form",
+        items: [
+            {xtype:"hidden",name: "user_id", value: <%= current_user.id %> },
+            {xtype:"textfield",fieldLabel: '<%= t(:username) %>', name: "username",allowBlank:false,anchor:'95%'},
+            {xtype:"textfield",fieldLabel: '<%= t(:email) %>', name: "email",allowBlank:false,anchor:'95%', vtype: 'email'} 
+        ],
+        buttonAlign:"center",
+        buttons: [
+            {
+                text: '<%= t('save') %>',
+                handler:function() {
+                    if (form.getForm().isValid()) {
+                       Ext.Ajax.request({
+						    url: 'user/modify_data',
+						    params: form.getForm().getValues(true,false,false,false),
+						    success: function(response){
+						       var obj = Ext.decode(response.responseText);
+		                        if (obj.success) {
+		                             edit_window.close();
+		                             store.reload();
+		                        } else {
+		                            show_tip_message('<%= t('material exist') %>')
+		                        }
+                          },
+	                      failure: function(response) {
+	                              show_tip_message("false")
+	                          }                
+                      });
+                   }       //form
+                   }      //handler 
+             },   
+            {
+                text: '<%= t('cancel') %>',
+                handler:function() {
+                    edit_window.close()
+                }
+            }
+        ]
+        });
+var edit_window = new Ext.Window({
+        width:380,
+        height:200,
+        resizable:false,
+        layout:"fit",
+        closeAction:'close',
+        plain: true,
+        constrainHeader:true,
+        modal:true,
+        bodyStyle: 'padding:5px;',
+        items:[form]
+    });
+
+var store = Ext.create('Ext.data.Store', {
+    id:'simpsonsStore',
+    autoLoad: false,
+    fields:['id','username', 'email'],
+    proxy: {
+        type: 'ajax',
+        url: 'user/edit_user.json',  // url that will load data with respect to start and limit params
+        reader: {
+            type: 'json',
+        }
+    }  
+});
+
+// specify segment of data you want to load using params
+store.load({
+    params:{
+        start:0,
+        limit: 10,
+        user_id: <%= current_user.id %>
+    }
+});
+
+var grid=Ext.create('Ext.grid.Panel', {
+    title: '<%= t(:userdata) %>',
+    store: store,
+    columns: [
+        { header: '<%= t(:list) %>',  dataIndex: 'id', flex: 1, align: 'center', hidden: true },
+        { header: '<%= t(:username) %>',  dataIndex: 'username', flex: 1, align: 'center' },
+        { header: '<%= t('email') %>',  dataIndex: 'email', flex: 1, align: 'center'  },
+        {
+            header: '<%= t('edituserdata') %>',
+            flex: 1,
+            xtype:'actioncolumn',
+            width:50,
+            align: 'center',
+            items: [{
+                icon: 'assets/shared/icons/fam/accept.gif',
+                tooltip: '<%= t('edituserdata') %>',
+                handler: function(grid, rowIndex, colIndex) {
+                    var rec = grid.getStore().getAt(rowIndex);
+                    Ext.Ajax.request({
+						    url: 'user/edit_user',
+						    params:  {user_id: rec.get('id')  },
+						    success: function(response){
+							    var obj = Ext.decode(response.responseText);
+	                            form.getForm().setValues({
+	                			username: obj['username'],
+	                			email: obj['email'],
+	            				});
+	                           edit_window.setTitle('<%= t('user info') %>');
+	                           edit_window.show();
+                          	},
+                      		failure: function(response) {
+                              show_tip_message("false")
+                          	}                
+                      });
+                }
+            }]
+        }
+    ],
+    width: 400,
+    height: 125,
+    selType: 'rowmodel',
+});
+
+var work_space = Ext.getCmp('work-space');
+work_space.removeAll();
+work_space.add(grid);
+work_space.doLayout();

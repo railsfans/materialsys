@@ -1,0 +1,410 @@
+function uploadfile(){
+ var  upload =new Ext.create('Ext.form.Panel', {
+        width: 500,
+        frame: true,
+        title: '<%= t('file upload box') %>',
+        bodyPadding: '10 10 0',
+        height: 300,
+        defaults: {
+            anchor: '100%',
+            allowBlank: false,
+            msgTarget: 'side',
+            labelWidth: 70
+        },
+        items: [
+        {
+            xtype: 'filefield',
+            emptyText: '<%= t('select file') %>',
+            fieldLabel: '<%= t('filelocation') %>',
+            name: 'photo',
+            buttonText: '',
+            buttonConfig: {
+                iconCls: 'upload-icon'
+            },
+            regex: /(.)+((\.csv)|(\.xls)(\w)?)$/i,
+            regexText: '<%= t('wrong file type') %>'
+        }],
+        buttonAlign: 'center',
+        buttons: [{
+            text: '<%= t('save') %>',
+            handler: function(){
+               var form = this.up('form').getForm();
+                if(form.isValid()){
+                    form.submit({
+                        url: 'manager/storein.json',
+                        waitMsg: '<%= t('uploading') %>',
+                        success: function(fp, o) {
+	                          show_tip_message(o.result.message+'<%= t(:uploadsuccess) %>'),
+	                          form.reset(),
+							  window.close(),
+							  store.reload()
+                        },
+                        failure: function(fp, o){
+                           	  show_tip_message(o.result.arr);
+                        }
+                    });
+                }
+            }
+        },{
+            text: '<%= t('reset') %>',
+            handler: function() {
+                this.up('form').getForm().reset();
+            }
+            },{
+            text: '<%= t('cancel') %>',
+            handler: function() {
+                window.close()
+            }
+        }]
+    });
+
+ var window = new Ext.Window({
+        iconCls:"silk-add",
+        width:380,
+        height:180,
+        resizable:false,
+        layout:"fit",
+        closeAction:'close',
+        plain: true,
+        constrainHeader:true,
+        modal:true,
+        bodyStyle: 'padding:5px;',
+        items:[upload]
+    }).show();
+};
+
+itemsPerPage = 20;   // set the number of items you want per page
+
+
+var store = Ext.create('Ext.data.Store', {
+    id:'simpsonsStore',
+    autoLoad: false,
+    fields:['date','situ','people','rlocation'],
+    pageSize: itemsPerPage, // items per page
+    proxy: {
+        type: 'ajax',
+        url: 'manager/importrecords.json',  // url that will load data with respect to start and limit params
+        reader: {
+            type: 'json',
+            root: 'gridData',
+            totalProperty: 'totalCount'
+        }
+    }  
+});
+
+// specify segment of data you want to load using params
+store.load({
+    params:{
+        start:0,
+        limit: itemsPerPage,
+    }
+});
+////////////
+		
+
+function record_search(type){
+    if(type=="search"){
+        if(Ext.getCmp("keyname").isValid() && Ext.getCmp("begintime").isValid() && Ext.getCmp("endtime").isValid()){
+
+            Ext.getCmp("clear_record_button").enable();
+            store.load({
+				params:{
+					start:0,
+					limit: itemsPerPage,
+					keyname : Ext.getCmp("keyname").getValue(),
+		                        begintime: Ext.getCmp("begintime").getValue(),
+		                        endtime: Ext.getCmp("endtime").getValue()
+				 }
+              });
+        }else{
+            show_tip_message('<%= t('enter right format') %>')
+        }
+    }else if(type=="clear"){
+        Ext.getCmp("clear_record_button").disable();
+        Ext.getCmp("keyname").setValue('');
+        Ext.getCmp("begintime").setValue('');
+        Ext.getCmp("endtime").setValue('');
+        store.load({
+			    params:{
+			        start:0,
+			        limit: 20,
+			    }
+              });
+    }
+}
+Ext.apply(Ext.form.field.VTypes, {
+			dateRange : function(val, field) {
+				var beginDate = null,
+					beginDateCmp = null,
+					endDate = null,
+					endDateCmp = null,
+					validStatus = true;
+				if(field.dateRange){
+					if(!Ext.isEmpty(field.dateRange.begin)){
+						beginDateCmp = Ext.getCmp(field.dateRange.begin);
+						beginDate = beginDateCmp.getValue();
+					}
+					if(!Ext.isEmpty(field.dateRange.end)){
+						endDateCmp = Ext.getCmp(field.dateRange.end);
+						endDate = endDateCmp.getValue();
+					}
+				}
+				if(!Ext.isEmpty(beginDate) && !Ext.isEmpty(endDate)){
+					validStatus =  beginDate <= endDate;
+				}
+				return validStatus;
+			},
+			dateRangeText : '<%= t('begin timegreatthanendtime') %>'
+		});
+///////////
+
+var grid=Ext.create('Ext.grid.Panel', {
+    title: '<%= t('recordlist') %>',
+    store: store,
+    viewConfig :
+	{
+		enableTextSelection: true
+	},
+    columns: [
+         {
+            xtype: 'rownumberer',
+            width: 60,
+            sortable: false,
+            header: '<%= t(:index) %>', 
+            align: 'center'
+        },   
+        { header: '<%= t('importpeople') %>',  dataIndex: 'people' , flex: 1, align: 'center' },
+        { header: '<%= t('dates') %>',  dataIndex: 'date' , flex: 1, align: 'center' },
+        { header: '<%= t('import situ') %>',  dataIndex: 'situ' , flex: 1, align: 'center' },
+        { header: '<%= t('download import file') %>',  dataIndex: 'rlocation' ,flex: 1, align: 'center', renderer: function tohref(value,meta,record){
+          return "<a href='manager/download?filename="+value+"'>"+value.split('_')[1]+"</a>";  
+        } },
+    ],
+    width: 400,
+    height: 125,
+    selType: 'rowmodel',
+    listeners: {
+	itemdblclick: function(dataview, index, item, e) {
+				var ids=index.internalId;
+                var title=index.data['people']+'/'+index.data['date']
+                var index = tabpanel.items.length + 1;
+                var recordstore = Ext.create('Ext.data.Store', {
+                   autoLoad: false,
+                   fields:['name', 'partnum', 'footprint','quantity','date','comment','code'],
+                   pageSize: itemsPerPage, // items per page
+                   proxy: {
+                     type: 'ajax',
+                     url: 'manager/importrecordlist.json',  // url that will load data with respect to start and limit params
+                    reader: {
+                      type: 'json',
+                      root: 'gridData',
+                      totalProperty: 'totalCount'
+                   },
+                   extraParams : {
+                     record_id: ids
+                   }
+                   }  
+                   });
+
+// specify segment of data you want to load using params
+
+           recordstore.load({
+                params:{
+                  start:0,
+                  limit: itemsPerPage,
+                }
+           });
+
+function code_search(type)
+{
+   if(type=="search"){
+        if(true){
+            Ext.getCmp("clear"+index).enable();
+            recordstore.load({
+			    params:{
+			        start:0,
+			        limit: 20,
+			        keyname : Ext.getCmp("tab"+index).getValue(),
+	                type : Ext.getCmp("keyname"+index).getValue(),
+			    }
+              });
+        }else{
+            show_tip_message('<%= t('enter right format') %>')
+        }
+    }else if(type=="clear"){
+        Ext.getCmp("clear"+index).disable();
+        Ext.getCmp("tab"+index).setValue('');
+        recordstore.load({
+			    params:{
+			        start:0,
+			        limit: itemsPerPage,
+			    }
+              });
+    }
+}
+Ext.regModel('PostInfo', {
+		    fields: [{name: 'key'},{name: 'value'}]
+		});
+		
+var postStore = Ext.create('Ext.data.Store',{
+		model : 'PostInfo',
+		data : [
+			{key:'<%= t('all') %>',value:'100000'},
+			{key:'<%= t('code') %>',value:'101100'},
+            {key:'<%= t('name') %>',value:'102200'},
+            {key:'<%= t('partNum') %>',value:'103300'},        
+		]
+		});
+var grid=Ext.create('Ext.grid.Panel', {
+    title: '<%= t(:componentrecord) %>',
+    store: recordstore,
+    columns: [
+            {
+            xtype: 'rownumberer',
+            width: 60,
+            sortable: false,
+            header: '<%= t(:index) %>', 
+            align: 'center'
+            },
+        { header: '<%= t('code') %>',  dataIndex: 'code' , flex: 1, align: 'center' },
+        { header: '<%= t('name') %>',  dataIndex: 'name', flex: 1, align: 'center'  },          
+        { header: '<%= t('partnum') %>',  dataIndex: 'partnum', flex: 1, align: 'center'  },
+        { header: '<%= t('footprint') %>',  dataIndex: 'footprint', flex: 1, align: 'center'  },
+        { header: '<%= t('quantity') %>',  dataIndex: 'quantity', flex: 1 , align: 'center' },
+        { header: '<%= t('dates') %>',  dataIndex: 'date' , flex: 1, align: 'center' },
+        { header: '<%= t('comment') %>',  dataIndex: 'comment' , flex: 1, align: 'center' },
+    ],
+    width: 400,
+    height: 125,
+    selType: 'rowmodel',
+    dockedItems: [{
+        xtype: 'pagingtoolbar',
+        store: recordstore,   // same store GridPanel is using
+        dock: 'bottom',
+        displayInfo: true, 
+        items:[
+                '-',
+               {
+				id:"keyname"+index,
+				xtype : 'combo',
+            	width: 120,
+            	listConfig : {
+				 	emptyText : '<%= t('no match') %>', 
+				 	maxHeight : 120 
+				},
+		        name:'post',
+				autoSelect : true,
+				triggerAction: 'all', 
+				store : postStore, 
+				displayField:'key', 
+				valueField:'value', 
+				queryMode: 'local', 
+				forceSelection : true, 
+				typeAhead : true, 
+				value:'100000',
+				},
+                {
+				xtype: 'textfield',
+				hideLabel: true,
+				width: 150,
+				id: "tab"+index,
+				 },
+				{ text: '<%= t('search') %>',id:"search"+index, iconCls:"silk-zoom", handler:function(){code_search("search")} },
+				{ text: '<%= t('clear') %>', id:"clear"+index, disabled:true, handler: function(){code_search("clear")} }
+                ]    
+    }],
+});
+	var toolbar = new Ext.toolbar.Toolbar({ 
+				dock: 'top',
+				width:300,                 
+	});
+	toolbar.add(
+	         {
+	           text: '<%= t('print') %>',
+	           iconCls: 'icon-print',
+	           handler : function(){
+	             Ext.ux.grid.Printer.printAutomatically = false;
+	             Ext.ux.grid.Printer.print(grid);
+	         }
+	         } 
+		);
+    grid.addDocked(toolbar);
+	var tabPage = tabpanel.add({ 
+           	title: title,
+	   		items : [grid],
+	   		closable : true,
+         	layout: 'fit'
+	})
+	tabpanel.setActiveTab(tabPage); 
+	}
+        },
+    dockedItems: [{
+        xtype: 'pagingtoolbar',
+        store: store,   // same store GridPanel is using
+        dock: 'bottom',
+        displayInfo: true,   
+        items:[
+                '-',
+                {
+	    	xtype: 'textfield',
+	    	hideLabel: true,
+	    	width: 70,
+	    	id: "keyname",
+
+	    },
+	    '<%= t('begintime') %>',
+	    {
+	      	hideLabel: true,
+	    	width: 120,
+	    	id: "begintime",
+			xtype:'datefield',
+			format:'Y/m/d', 
+			name:'date',
+			dateRange:{begin:'begintime',end:'endtime'}, 
+            vtype:'dateRange'
+	    },
+	    '<%= t('endtime') %>',
+	    {
+	    	hideLabel: true,
+	    	width: 120,
+	    	id: "endtime",
+			xtype:'datefield',
+			format:'Y/m/d', 
+			name:'date',
+			dateRange:{begin:'begintime',end:'endtime'}, 
+            vtype:'dateRange'
+        },
+	   { text: '<%= t('search') %>',id:"search_record_button", iconCls:"silk-zoom", handler:function(){record_search("search")} },
+       { text: '<%= t('clear') %>', id:"clear_record_button", disabled:true, handler: function(){record_search("clear")} }
+        ]       
+    }],
+
+});
+var toolbar = new Ext.toolbar.Toolbar({ 
+	dock: 'top',
+	width:300,
+    items: [
+	 { xtype: 'button', text: '<%= t('upload import file') %>',cls: 'startbutton', width: 100, handler: function(){ uploadfile(); }
+	},
+	{
+		text: '<%= t('print') %>',
+		iconCls: 'icon-print',
+		handler : function(){
+		Ext.ux.grid.Printer.printAutomatically = false;
+		Ext.ux.grid.Printer.print(grid);
+	}
+	}
+   ]
+});
+
+grid.addDocked(toolbar);
+var tabpanel=Ext.create('Ext.tab.Panel', {
+    width: 400,
+    height: 400,
+    items: [grid]
+}); 
+
+var work_space = Ext.getCmp('work-space');
+work_space.removeAll();
+work_space.add(tabpanel);
+work_space.doLayout();

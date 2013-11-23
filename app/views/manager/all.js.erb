@@ -1,0 +1,1574 @@
+Ext.Ajax.defaultHeaders = { 'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content') };
+function checkbomfile(){
+ var  uploadbom =new Ext.create('Ext.form.Panel', {
+        width: 500,
+        frame: true,
+        title: '<%= t('file upload box') %>',
+        bodyPadding: '10 10 0',
+        height: 300,
+        defaults: {
+            anchor: '100%',
+            allowBlank: false,
+            msgTarget: 'side',
+            labelWidth: 70
+        },
+        items: [
+        {
+            xtype: 'filefield',
+            emptyText: '<%= t('select file') %>',
+            fieldLabel: '<%= t('filelocation') %>',
+            name: 'file',
+            buttonText: '',
+            buttonConfig: {
+                iconCls: 'upload-icon'
+            },
+            regex: /(.)+((\.csv)|(\.xls)(\w)?)$/i,
+            regexText: '<%= t('wrong file type') %>'
+        }],
+        buttonAlign: 'center',
+        buttons: [{
+            text: '<%= t('save') %>',
+            handler: function(){
+               var form = this.up('form').getForm();
+                if(form.isValid()){
+                    form.submit({
+                        url: 'manager/bomupload.json',
+                        waitMsg: '<%= t('uploading') %>',
+                        success: function(fp, o) {
+	                    		show_tip_message(o.result.message+'<%= t(:uploadsuccess) %>');
+                                window.close()
+                        },
+                        failure: function(fp, o){
+                        	//	show_tip_message(o.result.arr.length);
+                                var shortid='';
+                                for(i=0;i<o.result.arr.length;i++)
+                                {
+                                shortid=shortid+o.result.arr[i];
+                                shortid=shortid+'_';
+                                }
+                                window.close();
+                                var shortstore = Ext.create('Ext.data.Store', {
+							    	autoLoad: false,
+							     	fields:['partparams','replacematerial'],
+							    	pageSize: 20, // items per page
+							    	proxy: {
+							        	type: 'ajax',
+							        	url: 'manager/shortlist.json', 
+							        	reader: {
+							            	type: 'json',
+							            	root: 'gridData',
+							            	totalProperty: 'totalCount'
+							        	},
+							    	extraParams : {
+                                         	shortid: shortid
+							     	}
+							    	}  
+									});
+									shortstore.load({
+									    params:{
+									        start:0,
+									        limit: 10,
+									    }
+									});
+                                    var shortgrid=Ext.create('Ext.grid.Panel', {
+									    title: '',
+									    store: shortstore,
+                                        dockedItems: [
+								        {
+								            xtype: 'toolbar',
+								            dock: 'bottom',
+								            items: [
+								                { xtype: 'button', text: '<%= t('save') %>',cls: 'startbutton', width: 100, handler: function(){ alert(shortgrid.headerCt.getGridColumns()[0].dataIndex); alert(shortgrid.getStore().getAt(0).get('replacematerial'));  alert(shortgrid.getStore().getCount());}}
+								            ]
+								         }],
+									    columns: [
+									        { header: '<%= t('shortpartparams') %>',  dataIndex: 'partparams', flex: 1, align: 'center'  }, 
+											{ header: '<%= t('replacepartparams') %>',  dataIndex: 'replacematerial', flex: 1, align: 'center'  }, 
+									        {
+									            header: '<%= t('search shortmaterial') %>',
+									            flex: 1,
+									            xtype:'actioncolumn',
+									            width:50,
+									            align: 'center',
+									            items: [{
+									                icon: 'assets/shared/icons/fam/plugin.gif',
+									                tooltip: '<%= t('searchvalue') %>',
+									                handler: function(grid, rowIndex, colIndex) {
+									                    var rec = grid.getStore().getAt(rowIndex);
+                                                          var models = grid.getStore().getRange();
+                                                          var record=models[rowIndex]
+                                                          /////begin
+                                                         var role_left_store =  Ext.create('Ext.data.Store', {
+													    	autoLoad: true,
+													     	fields: ['id', 'partparams','footprint'],
+													    	pageSize: 20, // items per page
+													    	proxy: {
+													        	type: 'ajax',
+													        	url: 'manager/searchmaterial.json',
+													        	reader: {
+													            	type: 'json',
+													            	root: 'gridData',
+													            	totalProperty: 'totalCount'
+													        	},
+													    	extraParams : {
+																grid: "left",
+                                                                partparams: rec.get('partparams'),
+                                                                strict: 'false'
+													     	}
+													    	}  
+															});
+                                                            var role_left_grid=Ext.create('Ext.grid.Panel', {
+															    iconCls:"silk-database_go",
+											                    title:'<%= t(:availabechose) %>',
+											                    store: role_left_store,
+											                    loadMask:true,
+											                    stateful: true,
+											                    frame:true,
+											                    stripeRows: true,
+											                    height:200,
+											                    viewConfig: { forceFit: true },
+															    columns: [
+															        { header: 'id',  dataIndex: 'id', hidden: true },
+															        { header: '<%= t(:partparams) %>',  dataIndex: 'partparams', flex: 1  }, { header: '<%= t(:footprint) %>',  dataIndex: 'footprint', flex: 1  },
+																	{	header:'',
+											                            xtype: 'actioncolumn',
+											                            flex: 1, 
+											                            align:"center",
+											                            items: [
+											                                {
+											                                	icon: 'assets/silk/add.png',
+											                                    tooltip: '<%= t(:delete) %>',
+											                                    handler: function(grid, rowIndex, colIndex) {
+										var record = role_left_store.getAt(rowIndex);
+                                        if(role_right_store.getCount()==0){
+                                        role_left_store.remove(record);
+                                        role_right_store.insert(0, record)
+                                        }
+                                        else {
+                                         alert("you select multi")
+                                        }           
+											                                    }
+											                                }
+											                            ]
+											                        }
+															        
+															    ],
+                                                                /*
+															    tbar : [{
+																	text : '取得所选行',
+																	iconCls:"silk-database_delete",
+																	handler : function(){
+																		  var index = 0;
+									                                    role_left_store.each(function() {
+									                                        role_right_store.insert(index, this);
+									                                        index++
+									                                    });
+									                                    role_left_store.removeAll();
+																	}
+																},"-",{
+																	text : '取得所选行',
+																	iconCls:"silk-database_delete",
+																	handler : function(){
+																		 var records = 					role_left_grid.getSelectionModel().getSelection();
+                                    if (records != 0) {
+                                        role_right_store.insert(0, records);
+                                        role_left_store.remove(records);
+                                    } else {
+                                    alert("select a data");
+                                    }
+																	}
+																}]
+                                                                */
+															});
+                                                            var role_right_store =  Ext.create('Ext.data.Store', {
+													    	autoLoad: true,
+													     	fields: ['id', 'partparams','footprint'],
+													    	pageSize: 20, // items per page
+													    	proxy: {
+													        	type: 'ajax',
+													        	url: 'manager/searchmaterial.json',
+													        	reader: {
+													            	type: 'json',
+													            	root: 'gridData',
+													            	totalProperty: 'totalCount'
+													        	},
+													    	extraParams : {
+                                                                grid: "right",
+                                                                partparams: rec.get('partparams'),
+                                                                strict: 'false'
+													     	}
+													    	}  
+															});
+                                                            var role_right_grid=Ext.create('Ext.grid.Panel', {
+															    iconCls:"silk-database_go",
+											                    title:'<%= t(:alreadychose) %>',
+											                    store: role_right_store,
+											                    loadMask:true,
+											                    stateful: true,
+											                    frame:true,
+											                    stripeRows: true,
+											                    height:200,
+											                    viewConfig: { forceFit: true },
+															    columns: [
+															        { header: 'id',  dataIndex: 'id', hidden: true},
+															        { header: '<%= t(:partparams) %>',  dataIndex: 'partparams', flex: 1 }, { header: '<%= t(:footprint) %>',  dataIndex: 'footprint', flex: 1 },
+																	{	header:'',
+											                            xtype: 'actioncolumn',
+											                            flex: 1,
+											                            align:"center",
+											                            items: [
+											                                {
+											                                   icon: 'assets/silk/cross.png',
+											                                    tooltip: '<%= t(:delete) %>',
+											                                    handler: function(grid, rowIndex, colIndex) {
+										 var record = role_right_store.getAt(rowIndex);
+                                        role_right_store.remove(record);
+                                        role_left_store.insert(0, record)		             
+											                                    }
+											                                }
+											                            ]
+											                        }
+															        
+															    ],
+                                                                /*
+															    tbar : [{
+																	text : '取得所选行',
+																	iconCls:"silk-database_add",
+																	handler : function(){
+																		  var index = 0;
+									                                    role_left_store.each(function() {
+									                                        role_right_store.insert(index, this);
+									                                        index++
+									                                    });
+									                                    role_left_store.removeAll();
+																	}
+																},"-",{
+																	text : '取得所选行',
+																	iconCls:"silk-database_add",
+																	handler : function(){
+																		 var records = 					role_left_grid.getSelectionModel().getSelection();
+                                    if (records != 0) {
+                                        role_right_store.insert(0, records);
+                                        role_left_store.remove(records);
+                                    }
+                                    else {
+                                    alert("select a data");
+                                    }
+																	}
+																}]
+                                                             */
+															});
+                                                             var panels=Ext.create('Ext.Panel', {
+											                    layout:'table',
+                                                                iconCls:"silk-lorry",
+											                    layoutConfig: { columns:2 },
+											                    defaults: {
+											                        style:"margin:5px",
+											                        width:257
+											                    },
+														        items: [role_left_grid, role_right_grid]
+														    });
+													       var window= new Ext.Window({
+											                    items:[panels],
+											                    buttonAlign:"center",
+											                    buttons: [
+											                        {
+											                            iconCls:"silk-disk",
+											                            text:'<%= t(:saves) %>',
+											                            handler: function() {
+											                               if(undefined==role_right_store.getAt(0)) 
+                                                                           alert("please select one")
+                                                                           else
+                                                                           {
+																		record.set('replacematerial', role_right_grid.getStore().getAt(0).get("partparams").split(' ')[0]+' '+role_right_grid.getStore().getAt(0).get("footprint")+' '+role_right_grid.getStore().getAt(0).get("partparams").split(' ')[1]);
+																		window.close();
+                                                                           }
+											                            }
+											                        },
+											                        {
+                                                                        iconCls:"silk-cancel",
+											                            text: '<%= t(:close) %>',
+											                            handler: function() {
+											                               window.close() 
+											                            }
+											                        }
+											                    ],
+											                }).show();                                                     															
+                                                          /////end
+									                }
+									            },{
+									                icon: 'assets/shared/icons/fam/accept.gif',
+									                tooltip: '<%= t('searchfootprint') %>',
+									                handler: function(grid, rowIndex, colIndex) {
+									                    var rec = grid.getStore().getAt(rowIndex);
+                                                          var models = grid.getStore().getRange();
+                                                          var record=models[rowIndex]
+                                                          /////begin
+                                                         var role_left_store =  Ext.create('Ext.data.Store', {
+													    	autoLoad: true,
+													     	fields: ['id', 'partparams','footprint'],
+													    	pageSize: 20, // items per page
+													    	proxy: {
+													        	type: 'ajax',
+													        	url: 'manager/searchmaterial.json',
+													        	reader: {
+													            	type: 'json',
+													            	root: 'gridData',
+													            	totalProperty: 'totalCount'
+													        	},
+													    	extraParams : {
+																grid: "left",
+                                                                partparams: rec.get('partparams'),
+                                                                strict: 'true'
+													     	}
+													    	}  
+															});
+                                                            var role_left_grid=Ext.create('Ext.grid.Panel', {
+															    iconCls:"silk-database_go",
+											                    title:"<%= t(:availabechose) %>",
+											                    store: role_left_store,
+											                    loadMask:true,
+											                    stateful: true,
+											                    frame:true,
+											                    stripeRows: true,
+											                    height:200,
+											                    viewConfig: { forceFit: true },
+															    columns: [
+															        { header: 'id',  dataIndex: 'id', hidden: true },
+															        { header: '<%= t(:partparams) %>',  dataIndex: 'partparams', flex: 1  }, { header: '<%= t(:footprint) %>',  dataIndex: 'footprint', flex: 1  },
+																	{	header:'',
+											                            xtype: 'actioncolumn',
+											                            flex: 1, 
+											                            align:"center",
+											                            items: [
+											                                {
+											                                	icon: 'assets/silk/add.png',
+											                                    tooltip: '<%= t(:delete) %>',
+											                                    handler: function(grid, rowIndex, colIndex) {
+										var record = role_left_store.getAt(rowIndex);
+                                        if(role_right_store.getCount()==0){
+                                        role_left_store.remove(record);
+                                        role_right_store.insert(0, record)
+                                        }
+                                        else {
+                                         alert("you select multi")
+                                        }           
+											                                    }
+											                                }
+											                            ]
+											                        }
+															        
+															    ],
+                                                                /*
+															    tbar : [{
+																	text : '取得所选行',
+																	iconCls:"silk-database_delete",
+																	handler : function(){
+																		  var index = 0;
+									                                    role_left_store.each(function() {
+									                                        role_right_store.insert(index, this);
+									                                        index++
+									                                    });
+									                                    role_left_store.removeAll();
+																	}
+																},"-",{
+																	text : '取得所选行',
+																	iconCls:"silk-database_delete",
+																	handler : function(){
+																		 var records = 					role_left_grid.getSelectionModel().getSelection();
+                                    if (records != 0) {
+                                        role_right_store.insert(0, records);
+                                        role_left_store.remove(records);
+                                    } else {
+                                    alert("select a data");
+                                    }
+																	}
+																}]
+                                                                */
+															});
+                                                            var role_right_store =  Ext.create('Ext.data.Store', {
+													    	autoLoad: true,
+													     	fields: ['id', 'partparams','footprint'],
+													    	pageSize: 20, // items per page
+													    	proxy: {
+													        	type: 'ajax',
+													        	url: 'manager/searchmaterial.json',
+													        	reader: {
+													            	type: 'json',
+													            	root: 'gridData',
+													            	totalProperty: 'totalCount'
+													        	},
+													    	extraParams : {
+                                                                grid: "right",
+                                                                partparams: rec.get('partparams'),
+                                                                strict: 'true'
+													     	}
+													    	}  
+															});
+                                                            var role_right_grid=Ext.create('Ext.grid.Panel', {
+															    iconCls:"silk-database_go",
+											                    title: '<%= t(:alreadychose) %>',
+											                    store: role_right_store,
+											                    loadMask:true,
+											                    stateful: true,
+											                    frame:true,
+											                    stripeRows: true,
+											                    height:200,
+											                    viewConfig: { forceFit: true },
+															    columns: [
+															        { header: 'id',  dataIndex: 'id', hidden: true},
+															        { header: '<%= t(:partparams) %>',  dataIndex: 'partparams', flex: 1 }, { header: '<%= t(:footprint) %>',  dataIndex: 'footprint', flex: 1 },
+																	{	header:'',
+											                            xtype: 'actioncolumn',
+											                            flex: 1,
+											                            align:"center",
+											                            items: [
+											                                {
+											                                   icon: 'assets/silk/cross.png',
+											                                    tooltip: '<%= t(:delete) %>',
+											                                    handler: function(grid, rowIndex, colIndex) {
+										var record = role_right_store.getAt(rowIndex);
+                                        role_right_store.remove(record);
+                                        role_left_store.insert(0, record)		             
+											                                    }
+											                                }
+											                            ]
+											                        }
+															        
+															    ],
+                                                                /*
+															    tbar : [{
+																	text : '取得所选行',
+																	iconCls:"silk-database_add",
+																	handler : function(){
+																		  var index = 0;
+									                                    role_left_store.each(function() {
+									                                        role_right_store.insert(index, this);
+									                                        index++
+									                                    });
+									                                    role_left_store.removeAll();
+																	}
+																},"-",{
+																	text : '取得所选行',
+																	iconCls:"silk-database_add",
+																	handler : function(){
+																		 var records = 					role_left_grid.getSelectionModel().getSelection();
+                                    if (records != 0) {
+                                        role_right_store.insert(0, records);
+                                        role_left_store.remove(records);
+                                    }
+                                    else {
+                                    alert("select a data");
+                                    }
+																	}
+																}]
+                                                             */
+															});
+                                                             var panels=Ext.create('Ext.Panel', {
+											                    layout:'table',
+                                                                iconCls:"silk-lorry",
+											                    layoutConfig: { columns:2 },
+											                    defaults: {
+											                        style:"margin:5px",
+											                        width:257
+											                    },
+														        items: [role_left_grid, role_right_grid]
+														    });
+													       var window= new Ext.Window({
+											                    items:[panels],
+											                    buttonAlign:"center",
+											                    buttons: [
+											                        {
+											                            iconCls:"silk-disk",
+											                            text:'<%= t(:saves) %>',
+											                            handler: function() {
+											                               if(undefined==role_right_store.getAt(0)) 
+                                                                           alert("please select one")
+                                                                           else
+                                                                           {
+																		record.set('replacematerial', role_right_grid.getStore().getAt(0).get("partparams").split(' ')[0]+' '+role_right_grid.getStore().getAt(0).get("footprint")+' '+role_right_grid.getStore().getAt(0).get("partparams").split(' ')[1]);
+																		window.close();
+                                                                           }
+											                            }
+											                        },
+											                        {
+                                                                        iconCls:"silk-cancel",
+											                            text: '<%= t(:close) %>',
+											                            handler: function() {
+											                               window.close() 
+											                            }
+											                        }
+											                    ],
+											                }).show();                                                     															
+                                                          /////end
+									                }
+									            }]
+									        }
+									    ],
+									    width: 400,
+									    height: 125,
+									    selType: 'rowmodel',
+                                        region: 'north'
+									});
+                                   
+                                      Ext.define('Plant', {
+									        extend: 'Ext.data.Model',
+									        fields: [
+									            {name: 'name', type: 'string'},
+									            {name: 'email', type: 'string'},
+									            {name: 'indoor', type: 'bool'},
+									            {name: 'id', type: 'integer'}
+									        ]
+									    });
+									var firstone=Ext.create('Ext.data.Store', {
+									    storeId:'simpsonsStore',
+									    model: 'Plant',
+									    data:{'items':[
+									    	{ 'name': 'Marge', "email":"marge@simpsons.com", "indoor":false, "id":1},
+									        { 'name': 'Marge', "email":"marges@simpsons.com", "indoor":false, "id":2 },
+									        { 'name': 'Marge', "email":"marge@simpsons.com", "indoor":false, "id":3},
+									        { 'name': 'Marge', "email":"marges@simpsons.com", "indoor":false, "id":4 },
+									        { 'name': 'Marge', "email":"marge@simpsons.com", "indoor":false, "id":5},
+									        { 'name': 'Marge', "email":"marges@simpsons.com", "indoor":false, "id":6 }
+									    ]},
+									    proxy: {
+									        type: 'memory',
+									        reader: {
+									            type: 'json',
+									            root: 'items'
+									        }
+									    },
+									    autoLoad: true
+									});
+									 
+									var grideast=Ext.create('Ext.grid.Panel', {
+									    title: 'Simpsons',
+									    store: firstone,
+                                        region: 'east',
+                                        split: true,
+										collapsible: true,
+										collapsed: false,
+										layout: "fit",
+										bodyStyle: "border: 0",
+									    viewConfig: { 
+									        stripeRows: false, 
+									        getRowClass: function(record) { 
+									            return record.get('id')%2==1 ? 'child-row' : 'adult-row'; 
+									        } 
+									    }, 
+									    columns: [
+									        { header: 'id',  dataIndex: 'id', hidden: true },
+									        { header: 'Name',  dataIndex: 'name' },
+									        { header: 'Email', dataIndex: 'email', flex: 1 },
+									        {
+									            xtype: 'checkcolumn',
+									            header: 'Indoor?',
+									            dataIndex: 'indoor',
+									            width: 55,
+									            stopSelection: false
+									        }
+									    ],
+									    tbar : [{
+											text : '取得所选行',
+											handler : function(){
+												var msg = '';
+											//	var rows = secondone.getSelectionModel().getSelection();
+											//	for(var i = 0; i < rows.length; i++){
+											//		msg = msg + rows[i].get('indoor') + '\n';
+											//	}
+											//	alert(msg);
+									        //  alert(secondone.getStore().getCount());
+									            for(var i=0; i<grideast.getStore().getCount(); i++)
+									            {
+									            var record = grideast.getStore().getAt(i); 
+									            var data = record.get('indoor');
+									            msg=msg+data;
+									            }
+									        //    alert(msg);
+									            if(record.get('indoor')==false)
+									            record.set('indoor',true);
+									            else
+									            record.set('indoor',false);
+									            show_tip_message("<h1 style='color: red'>hello</h1>")
+											}
+										}],
+									    buttonAlign: 'center',
+									    buttons: [{
+									        text: '<%= t('save') %>',
+									        handler: function(){
+									           	var msg = '';
+									            for(var i=0; i<grideast.getStore().getCount(); i++)
+									            {
+									            var record = grideast.getStore().getAt(i); 
+									            var data = record.get('indoor');
+									            msg=msg+data;
+									            }
+									            alert(msg);
+									        }
+									    },{
+									        text: '<%= t('cancel') %>',
+									        handler: function() {
+									           Ext.getCmp('detailPanel').html('hello')
+									        }
+									    }]
+									});
+                                      var panel=Ext.create('Ext.Panel', {
+								        frame: true,
+								        title: '',
+								        layout: 'border',
+								        items: [
+								            shortgrid
+                                     /*      , grideast,{
+								                id: 'detailPanel',
+								                region: 'center',
+								                bodyPadding: 7,
+								                bodyStyle: "background: #ffffff;",
+								                html: 'Please select a book to see additional details.'
+								        }
+                                     */
+                                        ]
+								    });
+                                    var tabPage = tabpanel.add({ 
+										title: '<%= t('short material') %>',
+										closable : true,
+									    items : [shortgrid],
+									    layout: 'fit'
+									})
+									tabpanel.setActiveTab(tabPage); 
+                        }
+                    });
+                }
+            }
+        },{
+            text: '<%= t('cancel') %>',
+            handler: function() {
+                window.close()
+            }
+        }]
+    });
+
+
+var window = new Ext.Window({
+        iconCls:"silk-add",
+        width:380,
+        height:180,
+        resizable:false,
+        layout:"fit",
+        closeAction:'close',
+        plain: true,
+        constrainHeader:true,
+        modal:true,
+        bodyStyle: 'padding:5px;',
+        items:[uploadbom]
+    }).show();
+
+};
+
+
+function productbomfile(){
+ var  uploadbom =new Ext.create('Ext.form.Panel', {
+        width: 500,
+        frame: true,
+        title: '<%= t('file upload box') %>',
+        bodyPadding: '10 10 0',
+        height: 300,
+        defaults: {
+            anchor: '100%',
+            allowBlank: false,
+            msgTarget: 'side',
+            labelWidth: 70
+        },
+        items: [
+        {
+            xtype: 'filefield',
+            emptyText: '<%= t('select file') %>',
+            fieldLabel: '<%= t('filelocation') %>',
+            name: 'file',
+            buttonText: '',
+            buttonConfig: {
+                iconCls: 'upload-icon'
+            },
+            regex: /(.)+((\.csv)|(\.xls)(\w)?)$/i,
+            regexText: '<%= t('wrong file type') %>'
+        }],
+        buttonAlign: 'center',
+        buttons: [{
+            text: '<%= t('save') %>',
+            handler: function(){
+               var form = this.up('form').getForm();
+                if(form.isValid()){
+                    form.submit({
+                        url: 'manager/createbom.json',
+                        waitMsg: '<%= t('uploading') %>',
+                        success: function(fp, o) {
+	                    		show_tip_message(o.result.message+'<%= t(:uploadsuccess) %>');
+                                window.close()
+                        },
+                        failure: function(fp, o){
+                                var mulid='';
+                                for(i=0;i<o.result.arr.length;i++)
+                                {
+                                mulid=mulid+o.result.arr[i];
+                                mulid=mulid+'_';
+                                }
+                                window.close();
+                                Ext.define('Multimaterial', {
+								        extend: 'Ext.data.Model',
+								        fields: [
+								            {name: 'partparams', type: 'string'},
+                                            {name: 'footprint', type: 'string'},
+								            {name: 'quantity', type: 'integer'},
+								            {name: 'checked', type: 'bool'},
+								            {name: 'id', type: 'integer'},
+                                            {name: 'index', type: 'integer'},
+                                            {name: 'importtime', type: 'string'},
+								        ]
+								    });
+								var multistore=Ext.create('Ext.data.Store', {
+								    autoLoad: true,
+							     	model: Multimaterial,
+							    	pageSize: 20, // items per page
+							    	proxy: {
+							        	type: 'ajax',
+							        	url: 'manager/searchmul.json',
+							        	reader: {
+							            	type: 'json',
+							            	root: 'gridData',
+							            	totalProperty: 'totalCount'
+							        	},
+							    	extraParams : {
+                                        multmaterial: mulid
+							     	}
+							    	}
+								});
+								 
+								var mulgrid=Ext.create('Ext.grid.Panel', {
+								    title: 'Simpsons',
+								    store: multistore,
+                                    split: true,
+									layout: "fit",
+									bodyStyle: "border: 0",
+								    viewConfig: { 
+								        stripeRows: false, 
+								        getRowClass: function(record) { 
+								            return record.get('index')%2==1 ? 'child-row' : 'adult-row'; 
+								        } 
+								    }, 
+								    columns: [
+								        { header: 'id',  dataIndex: 'id', hidden: true },
+                                        { header: 'index',  dataIndex: 'index', hidden: true },
+								        { header: 'partparams',  dataIndex: 'partparams', flex: 1 },
+								        { header: 'footprint', dataIndex: 'footprint', flex: 1 },
+                                        { header: 'quantity', dataIndex: 'quantity', flex: 1 },
+                                        { header: 'importtime', dataIndex: 'importtime', flex: 1, renderer: function (value, meta, record) {
+											return value.split('Z')[0].replace(/[T]/, ' ');
+		                				}},
+								        {
+								            xtype: 'checkcolumn',
+								            header: 'chose?',
+								            dataIndex: 'checked',
+								            width: 55,
+								            stopSelection: false,
+                                            listeners: {
+								            checkchange: function (column, recordIndex, checked) {
+                                                if(checked)
+                                                {
+                                                for(var i=0; i<mulgrid.getStore().getCount(); i++)
+									            {
+                                                if(i!=recordIndex && mulgrid.getStore().getAt(recordIndex).get('index')==mulgrid.getStore().getAt(i).get('index')){
+									            var record = mulgrid.getStore().getAt(i); 
+									            record.set('checked',false);;
+                                                }
+									            }
+                                                }
+								            }
+								        }
+								        }
+								    ],
+								    tbar : [{
+										text : '取得所选行',
+										handler : function(){
+											var msg = '';
+										//	var rows = secondone.getSelectionModel().getSelection();
+										//	for(var i = 0; i < rows.length; i++){
+										//		msg = msg + rows[i].get('indoor') + '\n';
+										//	}
+										//	alert(msg);
+								        //  alert(secondone.getStore().getCount());
+								            for(var i=0; i<grideast.getStore().getCount(); i++)
+								            {
+								            var record = grideast.getStore().getAt(i); 
+								            var data = record.get('indoor');
+								            msg=msg+data;
+								            }
+								        //    alert(msg);
+								            if(record.get('indoor')==false)
+								            record.set('indoor',true);
+								            else
+								            record.set('indoor',false);
+								            show_tip_message("<h1 style='color: red'>hello</h1>")
+										}
+									}],
+								    buttonAlign: 'center',
+								    buttons: [{
+								        text: '<%= t('save') %>',
+								        handler: function(){
+								           	var msg = '';
+                                            var num=0;
+								            for(var i=0; i<mulgrid.getStore().getCount(); i++)
+								            {
+								            var record = mulgrid.getStore().getAt(i); 
+								            var data = record.get('checked');
+                                            if(data==true){
+								            msg=msg+data;
+                                            num=num+1
+                                            }
+								            }
+                                            if(num==o.result.arr.length)
+								            alert(msg);
+								        }
+								    },{
+								        text: '<%= t('cancel') %>',
+								        handler: function() {
+								           for(var i=0; i<mulgrid.getStore().getCount(); i++)
+								            {
+								            var record = mulgrid.getStore().getAt(i); 
+								            var data = record.set('checked',false);
+								            }
+								        }
+								    }]
+								});
+                                var tabPage = tabpanel.add({ 
+									title: '<%= t('mul material') %>',
+									closable : true,
+								    items : [mulgrid],
+								    layout: 'fit'
+								})
+								tabpanel.setActiveTab(tabPage); 
+                        }
+                    });
+                }
+            }
+        },{
+            text: '<%= t('cancel') %>',
+            handler: function() {
+                window.close()
+            }
+        }]
+    });
+
+
+var window = new Ext.Window({
+        iconCls:"silk-add",
+        width:380,
+        height:180,
+        resizable:false,
+        layout:"fit",
+        closeAction:'close',
+        plain: true,
+        constrainHeader:true,
+        modal:true,
+        bodyStyle: 'padding:5px;',
+        items:[uploadbom]
+    }).show();
+
+};
+
+
+
+		 
+function user_action_handler(type) {
+	var form = new Ext.form.Panel({
+        baseCls: 'x-plain',
+        labelWidth: 60,
+        border:false,
+        layout:"form",
+        items: [
+            {xtype:"hidden",name: "id"},
+            {xtype:"textfield",fieldLabel: '<%= t(:name) %>', name: "name",anchor:'95%'},
+            {xtype:"textfield",fieldLabel: '<%= t(:partparams) %>', name: "partparams", anchor:'95%'},
+            {xtype:"textfield",fieldLabel: '<%= t(:partnum) %>', name: "partnum", anchor:'95%'},
+            {xtype:"textfield",fieldLabel: '<%= t(:footprint) %>', name: "footprint", anchor:'95%'},
+            {xtype:"textfield",fieldLabel: '<%= t(:manufacturer) %>', name: "manufacturer", anchor:'95%'},
+            { xtype: 'numberfield',minValue: 0,negativeText: '<%= t('mustnotnegative') %>',fieldLabel: '<%= t(:originquantity) %>', name: "originquantity", anchor:'95%'},
+            { xtype: 'numberfield',minValue: 0,negativeText: '<%= t('mustnotnegative') %>',fieldLabel: '<%= t(:currentquantity) %>', name: "currentquantity", anchor:'95%'},  
+            {xtype: 'numberfield',minValue:0,negativeText: '<%= t('mustnotnegative') %>',fieldLabel: '<%= t(:unitprice) %>', name: "unitprice", anchor:'95%'},
+           	{xtype:"textfield",fieldLabel: '<%= t(:suppliers) %>', name: "suppliers", anchor:'95%'},
+          	{xtype:"textarea",fieldLabel: '<%= t(:comment) %>', name: "comment",anchor:'95%'}
+        ],
+        buttonAlign:"center",
+        buttons: [
+            {
+                text: '<%= t('save') %>',
+                handler:function() {
+                    if (form.getForm().isValid()) {
+                      switch (type) {
+                      case "add":
+                     	Ext.Ajax.request({
+					    url: 'manager/material_add',
+					    params: form.getForm().getValues(true,false,false,false),
+					    success: function(response){
+				       		var obj = Ext.decode(response.responseText);
+		                        if (obj.success) {
+		                             edit_window.close();
+		                                store.reload()                                 
+			                        } else {
+			                            show_tip_message('<%= t('material exist') %>')
+			                        }
+		                          },
+		                      failure: function(response) {
+		                              show_tip_message("false")
+		                          }                
+		                      });
+                      break;
+                      case "edit": 
+                       Ext.Ajax.request({
+					    url: 'manager/material_edit',
+					    params: form.getForm().getValues(true,false,false,false),
+					    success: function(response){
+					       var obj = Ext.decode(response.responseText);
+			                        if (obj.success) {
+			                             edit_window.close();
+		                                store.reload()
+		                                      
+			                        } else {
+			                            show_tip_message('<%= t('suppliercode not exist') %>')
+			                        }
+		                          },
+		                      failure: function(response) {
+		                              show_tip_message("false")
+		                          }                
+		                      });
+                      break;
+                      }     //switch
+                   }       //form
+                   }      //handler 
+             },     
+            {
+                text: '<%= t('cancel') %>',
+                handler:function() {
+                    edit_window.hide()
+                }
+            }
+        ]
+        });
+	var edit_window = new Ext.Window({
+	        width:380,
+	        height:440,
+	        resizable:false,
+	        layout:"fit",
+	        closeAction:'close',
+	        plain: true,
+	        constrainHeader:true,
+	        modal:true,
+	        bodyStyle: 'padding:5px;',
+	        items:[form]
+	    });
+	var rows = materialgrid.getSelectionModel().getSelection();
+    if (type == "add") {
+        function fillvalue(value){
+		Ext.Ajax.request({
+		    url: 'manager/fillvalue.json',
+		    params: { id : value },
+		    method:  "GET",
+		    success: function(response){
+		       var obj = Ext.decode(response.responseText);
+		            if(obj.success){ 
+			            	form.getForm().setValues({
+			                manufacturer: obj.data[0]['manufacturer'],
+			                name: obj.data[0]['name'],
+			                partnum: obj.data[0]['partnum'],
+			                footprint: obj.data[0]['footprint'],
+                            partparams: obj.data[0]['partparams']
+			            	});
+                   }
+            },
+        	failure: function(response) {
+                
+            }                
+        });
+		};
+		var firstField = new Ext.form.TextField( {
+	        fieldLabel: '<%= t(:code) %>', 
+	        name: "code",
+	        emptyText:'<%= t(:pleaseentercode) %>',
+	        allowBlank:false,
+	        anchor:'95%',
+	        regex : /^(\d{8})$/,
+	        regexText:'<%= t(:onlyentereightnumber) %>',
+	        listeners : {
+	        	blur : function(o){
+	         		if(o.getRawValue().length!=8){
+	         		var s = form.getForm();
+	         		s.findField('code').focus(false, 20);
+	         		}
+	         		else{
+	          		fillvalue(o.getRawValue());
+					}}
+	         }}); 
+		form.insert(0,firstField)
+		edit_window.show();
+		edit_window.setTitle('<%= t('addmaterial') %>');
+    }  else if(type == "edit"){
+        if(rows.length==1){
+        supplierarray={}
+        <% Supplier.all.each do |s| %> 
+        <% if s.number.to_i!=0 %>   
+            supplierarray['<%= s.company %>']='<%= s.number %>'
+        <% end %>
+        <% end %>
+        form.getForm().setValues({
+            id:rows[0].get("id"),
+            name:rows[0].get("name"),
+            partnum:rows[0].get("partnum"),
+            partparams:rows[0].get("partparams"),
+            currentquantity:rows[0].get("currentquantity"),
+            originquantity:rows[0].get("originquantity"),
+            unitprice:rows[0].get("unitprice"),
+            comment:rows[0].get("comment"),
+            footprint:rows[0].get("footprint"),
+            code: rows[0].get('code'),
+            manufacturer: rows[0].get('manufacturer'),
+            suppliers: rows[0].get('supplier')=='' ? '' : rows[0].get('supplier') in supplierarray ? supplierarray[rows[0].get('supplier')] : rows[0].get('supplier')
+        });
+        edit_window.show();
+        edit_window.setTitle('<%= t('editmaterial') %>'+rows[0].get('code'));
+        }
+        else
+        {
+        show_tip_message('<%= t('choseadata') %>')
+        }
+        }
+	else{
+        if(rows.length==1){
+		Ext.MessageBox.confirm('<%= t('delete') %>', '<%= t('are you sure') %>', function(btn){
+			if(btn === 'yes'){
+		        Ext.Ajax.request({
+				    url: 'manager/material_delete',
+				    params: { id : rows[0].get("id") },
+				    success: function(response){
+				       var obj = Ext.decode(response.responseText);
+		                        if (obj.success) {
+		                             store.reload();
+		                        } else {
+		                            show_tip_message("false")
+		                        }
+		                        },
+	                failure: function(response) {
+	                        show_tip_message("false")
+	                        }                
+	                });
+                }
+                });
+                }
+            else
+            {
+            show_tip_message('<%= t('choseadata') %>')
+            }  
+        }
+}
+
+itemsPerPage = 20;   // set the number of items you want per page
+var store = Ext.create('Ext.data.Store', {
+    id:'simpsonsStore',
+    autoLoad: false,
+    fields:['id','index','name', 'code', 'partnum','importtime', 'footprint','unitprice','totalprice','currentquantity','originquantity','manufacturer','comment','supplier','partparams'],
+    pageSize: itemsPerPage, // items per page
+    proxy: {
+        type: 'ajax',
+        url: 'manager/allmaterial.json',  // url that will load data with respect to start and limit params
+        reader: {
+            type: 'json',
+            root: 'gridData',
+            totalProperty: 'totalCount'
+        },
+    extraParams : {
+     }
+    }  
+});
+
+// specify segment of data you want to load using params
+
+store.load({
+    params:{
+        start:0,
+        limit: itemsPerPage,
+    }
+});
+
+////////////
+Ext.regModel('valueInfo', {
+		    fields: [{name: 'key'},{name: 'value'}]
+		});
+		
+var valueStore = Ext.create('Ext.data.Store',{
+		model : 'valueInfo',
+		data : [
+            {key:'<%= t('all') %>',value:'100000'},
+			{key:'<%= t('code') %>',value:'101100'},
+			{key:'<%= t('name') %>',value:'102200'},
+			{key:'<%= t('partnum') %>',value:'103300'},
+			{key:'<%= t('manufacturer') %>',value:'104400'},
+			{key:'<%= t('suppliers') %>',value:'105500'}
+		]
+		});		
+
+function material_search(type){
+	if(type=="search"){
+        if(Ext.getCmp("search_material").isValid()){
+            Ext.getCmp("clear_material_button").enable();
+            store.load({
+				    params:{
+				        start:0,
+				        limit: itemsPerPage,
+				        value : Ext.getCmp("search_material").getValue(),
+                		search_type: Ext.getCmp("search_in_material_list_id").getValue()
+				    }
+              });
+		}else{
+	            show_tip_message('<%= t('enter key word') %>')
+	    }
+    }else if(type=="clear"){
+        Ext.getCmp("clear_material_button").disable();
+        Ext.getCmp("search_material").setValue('');
+        store.load({
+			    params:{
+			        start:0,
+			        limit: itemsPerPage,
+			    }
+        });
+    }
+}
+// unknown
+
+function change(val) {
+	if (val >= 10) {
+	    return '<span style="color:green;">' + val + '</span>';
+	} else if (val < 10) {
+	    return '<span style="color:red;">' + val + '</span>';
+	}
+	    return val;
+}
+
+var materialgrid=Ext.create('Ext.grid.Panel', {
+    title: '<%= t(:materialist) %>',
+    store: store,
+    viewConfig: {         
+        stripeRows: true,
+    	enableTextSelection: true,
+		listeners: {
+    	itemcontextmenu: function(view, rec, node, index, e) {
+        e.stopEvent();
+        function make(type){
+            if(type=='add'){
+	            function fillvalue(value){
+	            Ext.Ajax.request({
+			    url: 'manager/fillvalue.json',
+			    params: { id : value },
+			    method:  "GET",
+			    success: function(response){
+			       
+	            },
+		        failure: function(response) {
+		        	show_tip_message("false")
+		        }                
+		        });
+				};
+			    var copyform = new Ext.form.Panel({
+			    baseCls: 'x-plain',
+			    labelWidth: 60,
+			    border:false,
+			    layout:"form",
+		    	items: [
+		        {xtype:"hidden",name: "id"},
+		        {xtype:"textfield",fieldLabel: '<%= t(:code) %>', name: "code",emptyText:'<%= t(:pleaseentercode) %>',allowBlank:false,anchor:'95%',regex : /^(\d{8})$/,regexText:'<%= t(:onlyentereightnumber) %>'},
+			    {xtype:"textfield",fieldLabel: '<%= t(:name) %>', name: "name",anchor:'95%'},
+			    {xtype:"textfield",fieldLabel: '<%= t(:partnum) %>', name: "partnum", anchor:'95%'},
+			    {xtype:"textfield",fieldLabel: '<%= t(:footprint) %>', name: "footprint", anchor:'95%',   renderer: function (value, meta, record) {
+			            var max = 10;
+			            meta.tdAttr = 'data-qtip="' + value + '"';
+			            return value.length < max ? value : value.substring(0, max) + '...';
+			        }},   
+			    {xtype:"textfield",fieldLabel: '<%= t(:unitprice) %>', name: "unitprice", anchor:'95%'},
+			    {xtype:"textfield",fieldLabel: '<%= t(:quantity) %>', name: "quantity", anchor:'95%'},
+			    {xtype:"textfield",fieldLabel: '<%= t(:manufacturer) %>', name: "manufacturer", anchor:'95%'},
+				{xtype:"textfield",fieldLabel: '<%= t(:suppliers) %>', name: "suppliers", anchor:'95%'},
+			    {xtype:"textarea",fieldLabel: '<%= t(:comment) %>', name: "comment",anchor:'95%'}  
+				],
+				buttonAlign:"center",
+				buttons: [
+				    {
+				        text: '<%= t('save') %>',
+				        handler:function() {
+				            if (copyform.getForm().isValid()) {
+				                Ext.Ajax.request({
+							    url: 'manager/material_add',
+							    params: copyform.getForm().getValues(true,false,false,false),
+							    success: function(response){
+							       var obj = Ext.decode(response.responseText);
+						                    if (obj.success) {
+						                            copy_window.close();
+						                            store.reload(); 
+						                    } else {
+						                        show_tip_message('<%= t('material exist') %>')
+						                    }
+						                    },
+						                failure: function(response) {
+						                        show_tip_message("false")
+						                    }                
+						                });     
+						            }       //form        
+						            }      //handler 
+				    },                    
+				    {
+				        text: '<%= t('cancel') %>',
+				        handler:function() {
+				            copy_window.close()
+				        }
+				    }
+				]
+				});
+                supplierarray={}
+		        <% Supplier.all.each do |s| %> 
+		        <% if s.number.to_i!=0 %>   
+		            supplierarray['<%= s.company %>']='<%= s.number %>'
+		        <% end %>
+		        <% end %>
+				copyform.getForm().setValues({    
+				    name:rec.get("name"),
+				    partnum:rec.get("partnum"),
+				    quantity:rec.get("quantity"),
+				    unitprice:rec.get("unitprice"),
+				    comment:rec.get("comment"),
+				    footprint:rec.get("footprint"),
+				    code: rec.get('code'),
+				    manufacturer: rec.get('manufacturer'),
+                    suppliers: rec.get('supplier')=='' ? '' : rec.get('supplier') in supplierarray ? supplierarray[rec.get('supplier')] : rec.get('supplier')
+				});
+				var copy_window = new Ext.Window({
+				        width:380,
+				        height:400,
+				        resizable:false,
+				        layout:"fit",
+				        closeAction:'close',
+				        plain: true,
+				        constrainHeader:true,
+				        modal:true,
+				        bodyStyle: 'padding:5px;',
+				        items:[copyform]
+					}).show();
+			}
+			else{
+				Ext.MessageBox.confirm('<%= t('delete') %>', '<%= t('are you sure') %>', function(btn){
+			   	if(btn === 'yes'){
+					Ext.Ajax.request({
+					    url: 'manager/material_delete',
+					    params: { id : rec.get("id") },
+					    success: function(response){
+					       var obj = Ext.decode(response.responseText);
+		                        if (obj.success) {
+		                             store.reload();
+		                        } else {
+		                            show_tip_message("false")
+		                        }
+	                          },
+	                     failure: function(response) {
+	                              show_tip_message("false")
+	                          }                
+	                      });
+	                  } })
+	          }
+	       	};  //end function make
+       		var menu_grid = new Ext.menu.Menu({
+				items: 
+			        [
+			        	{ text: '<%= t(:addline) %>', handler: function() {console.log("Add"); make("add");} },
+			            { text: '<%= t(:deleteline) %>', handler: function() {console.log("Delete"); make("delete");} }
+			        ]
+			    });
+            	menu_grid.showAt(e.getXY());
+                return false;
+            }
+	}	
+    },
+    columns: [
+            {
+            xtype: 'rownumberer',
+            width: 60,
+            sortable: false,
+            header: '<%= t(:index) %>', 
+            align: 'center'
+            },
+        { header: '<%= t(:id) %>',  dataIndex: 'id', hidden: true },
+        { header: '<%= t(:code) %>',  dataIndex: 'code', flex: 1, align: 'center' ,   renderer: function (value, meta, record) {
+                    var max = 10;
+                    meta.tdAttr = 'data-qtip="' + value + '"';
+                    return value.length < max ? value : value.substring(0, max) + '...';
+                }},
+		{ header: '<%= t('name') %>',  dataIndex: 'name', flex: 1, align: 'center', renderer: function (value, meta, record) {
+                    if (record.get('name')==null) {
+						return '';
+						} else {
+						  var max = 10;
+			                    meta.tdAttr = 'data-qtip="' + value + '"';
+			                    return value.length < max ? value : value.substring(0, max) + '...';
+						} 
+                }  },
+		{ header: '<%= t('partparams') %>',  dataIndex: 'partparams', flex: 1, align: 'center', renderer: function (value, meta, record) {
+                    if (record.get('partparams')==null) {
+						return '';
+						} else {
+						  var max = 10;
+			                    meta.tdAttr = 'data-qtip="' + value + '"';
+			                    return value.length < max ? value : value.substring(0, max) + '...';
+						}
+                }  },
+        { header: '<%= t('partnum') %>',  dataIndex: 'partnum', flex: 1.5, align: 'center', renderer: function (value, meta, record) {
+                    if (record.get('partnum')==null) {
+						return '';
+						} else {
+						  var max = 10;
+			                    meta.tdAttr = 'data-qtip="' + value + '"';
+			                    return value.length < max ? value : value.substring(0, max) + '...';
+						}
+                }  },
+    	{ header: '<%= t('footprint') %>',  dataIndex: 'footprint', flex: 1, align: 'center', renderer: function (value, meta, record) {
+                    if (record.get('footprint')==null) {
+						return '';
+						} else {
+						  var max = 10;
+			                    meta.tdAttr = 'data-qtip="' + value + '"';
+			                    return value.length < max ? value : value.substring(0, max) + '...';
+						}
+                }  },
+         { header: '<%= t('manufacturer') %>',  dataIndex: 'manufacturer', flex: 1, align: 'center', renderer: function (value, meta, record) {
+                    if (record.get('manufacturer')==null) {
+						return '';
+						} else {
+						  var max = 10;
+			                    meta.tdAttr = 'data-qtip="' + value + '"';
+			                    return value.length < max ? value : value.substring(0, max) + '...';
+						}
+                }
+		},
+        { header: '<%= t('originquantity') %>',  dataIndex: 'originquantity', flex: 1 , align: 'center', renderer : change, },
+        { header: '<%= t('currentquantity') %>',  dataIndex: 'currentquantity', flex: 1 , align: 'center', renderer : change, },
+        { header: '<%= t('unitprice') %>',  dataIndex: 'unitprice', flex: 1, align: 'center'  },
+       
+        { header: '<%= t('totalprice') %>',  dataIndex: 'totalprice' , flex: 1, align: 'center' },
+        { header: '<%= t('suppliers') %>',  dataIndex: 'supplier' , flex: 1, align: 'center', renderer: function (value, meta, record) {
+                    if (record.get('supplier')==null) {
+						return '';
+						} else {
+						  var max = 10;
+			                    meta.tdAttr = 'data-qtip="' + value + '"';
+			                    return value.length < max ? value : value.substring(0, max) + '...';
+						}
+                } },
+         { header: '<%= t('importtime') %>',  dataIndex: 'importtime', flex: 1, align: 'center', renderer: function (value, meta, record) {
+                    if (record.get('importtime')==null) {
+						return '';
+						} else {
+						  var max = 10;
+			                    meta.tdAttr = 'data-qtip="' + value + '"';
+			                    return value.length < max ? value : value.substring(0, max) + '...';
+						}
+                }  },
+        { header: '<%= t('comment') %>',  dataIndex: 'comment' , flex: 0.5, align: 'center' },
+    ],
+    width: 400,
+    height: 125,
+    listeners: {
+	'cellclick': function(iView, iCellEl, iColIdx, iStore, iRowEl, iRowIdx, iEvent) {
+	if(iColIdx==12){
+      	var title=iView.getRecord(iRowEl).data.code;
+		var supplierstore = Ext.create('Ext.data.Store', {
+    	autoLoad: false,
+     	fields:['company','address', 'website', 'contactor', 'fax', 'phone','email','comment','material'],
+    	pageSize: 20, // items per page
+    	proxy: {
+        	type: 'ajax',
+        	url: 'manager/supplierlist.json',  // url that will load data with respect to start and limit params
+        	reader: {
+            	type: 'json',
+            	root: 'gridData',
+            	totalProperty: 'totalCount'
+        	},
+    	extraParams : {
+        	supplier: iView.getRecord(iRowEl).data.supplier
+     	}
+    	}  
+		});
+		supplierstore.load({
+		    params:{
+		        start:0,
+		        limit: 10,
+		    }
+		});
+		var grid=Ext.create('Ext.grid.Panel', {
+		    title: '<%= t(:supplierinfo) %>',
+		    store: supplierstore,
+		    columns: [
+		            {
+		            xtype: 'rownumberer',
+		            width: 60,
+		            sortable: false,
+		            header: '<%= t(:index) %>', 
+		            align: 'center'
+		            },
+			{ header: '<%= t('company') %>', dataIndex: 'company', flex: 1,align: 'center', renderer: function (value, meta, record) {
+		                    if (record.get('company')==null) {
+								return '';
+								} else {
+								  var max = 10;
+					                    meta.tdAttr = 'data-qtip="' + value + '"';
+					                    return value.length < max ? value : value.substring(0, max) + '...';
+								}
+		                }  },
+			{ header: '<%= t('material') %>',  dataIndex: 'material' , flex: 1, align: 'center', renderer: function (value, meta, record) {
+		                    if (record.get('material')==null) {
+								return '';
+								} else {
+								  var max = 10;
+						                meta.tdAttr = 'data-qtip="' + value + '"';
+						                return value.length < max ? value : value.substring(0, max) + '...';
+								}
+		                }  },
+			{ header: '<%= t('address') %>',  dataIndex: 'address', flex: 1 ,align: 'center', renderer: function (value, meta, record) {
+		                    if (record.get('address')==null) {
+								return '';
+								} else {
+								  var max = 10;
+					                    meta.tdAttr = 'data-qtip="' + value + '"';
+					                    return value.length < max ? value : value.substring(0, max) + '...';
+								}
+		                } },
+			{ header: '<%= t('website') %>', dataIndex: 'website', flex: 1 ,align: 'center'},
+			{ header: '<%= t('contactor') %>', dataIndex: 'contactor', flex: 1,align: 'center' },
+			{ header: '<%= t('fax') %>',  dataIndex: 'fax', flex: 1 ,align: 'center', renderer: function (value, meta, record) {
+		                    if (record.get('fax')==null) {
+								return '';
+								} else {
+								  var max = 10;
+					                    meta.tdAttr = 'data-qtip="' + value + '"';
+					                    return value.length < max ? value : value.substring(0, max) + '...';
+								}
+		                } },
+			{ header: '<%= t('phone') %>', dataIndex: 'phone', flex: 1,align: 'center', renderer: function (value, meta, record) {
+		                    if (record.get('phone')==null) {
+								return '';
+								} else {
+								  var max = 10;
+					                    meta.tdAttr = 'data-qtip="' + value + '"';
+					                    return value.length < max ? value : value.substring(0, max) + '...';
+								}
+		                }  }   ,
+			{ header: '<%= t('email') %>',  dataIndex: 'email', flex: 1 ,align: 'center', renderer: function (value, meta, record) {
+		                    if (record.get('email')==null) {
+								return '';
+								} else {
+								  var max = 10;
+					                    meta.tdAttr = 'data-qtip="' + value + '"';
+					                    return value.length < max ? value : value.substring(0, max) + '...';
+								}
+		                } },
+			{ header: '<%= t('comment') %>', dataIndex: 'comment', flex: 1 ,align: 'center'}           
+		    ],
+		    width: 400,
+		    height: 125,
+		    selType: 'rowmodel',
+		    dockedItems: [{
+		        xtype: 'pagingtoolbar',
+		        store: supplierstore,   // same store GridPanel is using
+		        dock: 'bottom',
+		        displayInfo: true, 
+		    }],
+			});
+			var toolbar = new Ext.toolbar.Toolbar({ 
+				dock: 'top',
+				width:300
+			});
+			toolbar.add({
+					text: '<%= t('print') %>',
+					iconCls: 'icon-print',
+					handler : function(){
+					Ext.ux.grid.Printer.printAutomatically = false;
+					Ext.ux.grid.Printer.print(grid);
+					}
+				});
+			grid.addDocked(toolbar);
+			var tabPage = tabpanel.add({ 
+				title: title,
+				closable : true,
+			    items : [grid],
+			    layout: 'fit'
+			})
+			tabpanel.setActiveTab(tabPage); 
+	} //end if
+    }
+	},
+    selType: 'rowmodel',
+    dockedItems: [
+        {
+            xtype: 'toolbar',
+            dock: 'top',
+            items: [
+                { xtype: 'button', text: '<%= t('checkshort') %>',cls: 'startbutton', width: 100, handler: function(){ checkbomfile(); }},
+        		{ xtype: 'button', text: '<%= t('product bom file') %>',cls: 'startbutton', width: 100, handler: function(){ productbomfile(); }},'->',{text: '<p style="color: red">'+ '<%= t('store total cost') %>'+' <%= Store.totalcost() %>'+'<%= t('yuan') %>'+'</p>',iconCls:"bomcost"},{xtype: 'tbspacer', width: 240}
+            ]
+         },
+        {
+        xtype: 'pagingtoolbar',
+        store: store,   // same store GridPanel is using
+        dock: 'bottom',
+        displayInfo: true,   
+        items:[
+            '-',
+            { text: '<%= t('add') %>', iconCls:"silk-user_add", handler: function() {
+                user_action_handler("add")
+            }},
+            { text: '<%= t('edit') %>', iconCls:"silk-user_edit", handler: function() {
+                user_action_handler("edit");
+            }},
+            { text:  '<%= t('delete') %>', iconCls:"silk-user_delete", handler: function() {
+                user_action_handler("delete")
+            }},
+            {
+	    	xtype: 'textfield',
+	    	hideLabel: true,
+	    	width: 150,
+	    	id: "search_material",
+	    },
+	    {
+ 		id:"search_in_material_list_id",
+		xtype : 'combo',
+		listConfig : {
+			emptyText : 'no match data', 
+			maxHeight : 120 
+		},
+		name:'value',
+		autoSelect : true,
+		triggerAction: 'all', 
+		store : valueStore, 
+		displayField:'key', 
+		valueField:'value', 
+		queryMode: 'local', 
+		forceSelection : true, 
+		typeAhead : true, 
+		value:'100000',
+	  	},
+		{ text: '<%= t('search') %>',id:"search_material_button", iconCls:"silk-zoom", handler:function(){material_search("search")} },
+		{ text: '<%= t('clear') %>', id:"clear_material_button", disabled:true, handler: function(){material_search("clear")} }
+     ]       
+    }],
+});
+
+var tabpanel=Ext.create('Ext.tab.Panel', {
+    width: 400,
+    height: 400,
+    items: [materialgrid]
+});
+var work_space = Ext.getCmp('work-space');
+work_space.removeAll();
+work_space.add(tabpanel);
+work_space.doLayout();
