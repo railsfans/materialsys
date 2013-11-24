@@ -1,0 +1,48 @@
+<% s=Bomfile.where(:project_id=>params[:project_id]).where(:filename=>params[:bomfile]).first.id %>
+<% m=params[:number].to_i %>
+var datas = <%=raw Bom.cal(s,m) %>;
+if (datas=='')
+ show_tip_message('<%= t('no short') %>')
+else
+{
+	var index = tabpanel.items.length + 1;
+	var grid=Ext.create('Ext.grid.Panel', {
+	    title: '<%= t('bom cal') %>',
+	    width:200,
+		height:130,
+		frame:true,
+		viewConfig: {
+			forceFit : true,
+	        stripeRows: true//在表格中显示斑马线
+		},
+		store: {//配置数据源
+	        fields: ['id','name','partName', 'footprint'],//定义字段
+	        proxy: {
+	            type: 'memory',//Ext.data.proxy.Memory内存代理
+	            data : datas,//读取内嵌数据
+	            reader : 'array'//Ext.data.reader.Array解析器
+	        },
+	        autoLoad: true//自动加载
+	    },
+		columns: [//配置表格列
+	    	{
+	            xtype: 'rownumberer',
+	            width: 60,
+	            sortable: false,
+	            header: '<%= t(:index) %>', 
+	            align: 'center'
+			},
+			{header: "<%= t('code') %>", width: 30, dataIndex: 'id', sortable: true,flex: 1,align: 'center'},
+			{header: "<%= t('name') %>", width: 80, dataIndex: 'partName', sortable: true,flex: 1,align: 'center'},
+			{header: "<%= t('short number') %>", width: 80, dataIndex: 'name', sortable: true,flex: 1,align: 'center'},
+		]
+	});
+	var tabPage = tabpanel.add({ 
+		title: '<%= params[:bomfile].split('.')[0] %>',
+		items : [grid],
+		closable : true,
+	                    width: 3000,
+	                    layout:'fit', 
+	})
+	tabpanel.setActiveTab(tabPage); 
+}

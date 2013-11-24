@@ -1,0 +1,541 @@
+var store = Ext.create('Ext.data.Store', {
+    id:'simpsonsStore',
+    autoLoad: false,
+    fields:['id','footprint','flocation','partparams', 'code','partref','name','quantity','partnum','manufacturer','comment','module'],
+    pageSize: 20, // items per page
+    proxy: {
+        type: 'ajax',
+        url: 'bom/show.json',  // url that will load data with respect to start and limit params
+        reader: {
+            type: 'json',
+            root: 'gridData',
+            totalProperty: 'totalCount'
+        },
+    extraParams : {
+       fileid :  <%= Bomfile.where(:project_id=>params[:project_id]).where(:filename=>params[:filename]).first.id %>
+     }
+    }  
+});
+ <% fileid=Bomfile.where(:project_id=>params[:project_id]).where(:filename=>params[:filename]).first.id %>;
+// specify segment of data you want to load using params
+
+store.load({
+    params:{
+        start:0,
+        limit: 20,
+    }
+});
+
+function bom_action_handler(type){
+ var form = new Ext.form.Panel({
+        id: 'formss',
+        baseCls: 'x-plain',
+        labelWidth: 60,
+        border:false,
+        layout:"form",
+        items: [
+            {xtype:"hidden",name: "bom_id", value: '<%= Bomfile.where(:project_id=>params[:project_id]).where(:filename=>params[:filename]).first.id %>'},
+            {xtype:"hidden",name: "id"},
+            {xtype:"textfield",fieldLabel: '<%= t(:partRef) %>', name: "partRef",anchor:'95%'},
+            {xtype:"textfield",fieldLabel: '<%= t(:name) %>', name: "name",anchor:'95%'},
+            {xtype:"textfield",fieldLabel: '<%= t(:partparams) %>', name: "partparams",anchor:'95%'},
+            {xtype:"textfield",fieldLabel: '<%= t(:partNum) %>', name: "partNum", anchor:'95%'},
+            {xtype:"textfield",fieldLabel: '<%= t(:footprint) %>', name: "footprint", anchor:'95%'},   
+            {xtype:"textfield",fieldLabel: '<%= t(:manufacturer) %>', name: "manufacturer", anchor:'95%'},
+            {xtype:"textfield",fieldLabel: '<%= t(:module) %>', name: "module", anchor:'95%'},
+            {xtype:"textarea",fieldLabel: '<%= t(:comment) %>', name: "comment",anchor:'95%'}
+        ],
+        buttonAlign:"center",
+        buttons: [
+            {
+                text: '<%= t('save') %>',
+                handler:function() {
+                    if (form.getForm().isValid()) {
+                      switch (type) {
+                      case "add":
+                     	Ext.Ajax.request({
+					    url: 'bom/material_add',
+					    params: form.getForm().getValues(true,false,false,false),
+					    success: function(response){
+					       var obj = Ext.decode(response.responseText);
+			                        if (obj.success=='codenoexist') {
+		                                show_tip_message('<%= t('code donot exist') %>')
+		                                }
+		                                else if (obj.success){
+			                             edit_window.close();
+			                             store.reload();
+			                             show_tip_message("success")
+			                        } else {
+			                            show_tip_message('<%= t('material already exist') %>')
+			                        }
+		                          },
+                      failure: function(response) {
+                              show_tip_message("false")
+                          }                
+                      });
+                      break;
+                      case "edit": 
+                       Ext.Ajax.request({
+						    url: 'bom/material_edit',
+						    params: form.getForm().getValues(true,false,false,false),
+						    success: function(response){
+						       var obj = Ext.decode(response.responseText);
+		                        if (obj.success) {
+		                             edit_window.close();
+		                             store.reload();
+		                        } else {
+		                            show_tip_message("false")
+		                        }
+	                          },
+	                      failure: function(response) {
+	                              show_tip_message("false")
+	                          }                
+                      });
+                      break;
+                      }     //switch
+                   }       //form
+                   }      //handler 
+             },             
+            {
+                text: '<%= t('cancel') %>',
+                handler:function() {
+                    edit_window.hide()
+                }
+            }
+        ]
+        });
+    var edit_window = new Ext.Window({
+        width:380,
+        height:380,
+        resizable:false,
+        layout:"fit",
+        closeAction:'close',
+        plain: true,
+        constrainHeader:true,
+        modal:true,
+        bodyStyle: 'padding:5px;',
+        items:[form]
+    });
+    var rows = grid.getSelectionModel().getSelection();
+    if (type == "add") {
+     var firstField = new Ext.form.TextField({xtype:"textfield",fieldLabel: '<%= t(:code) %>', name: "code",emptyText:'<%= t(:pleaseentercode) %>',allowBlank:false,anchor:'95%',regex : /^(\d{8})$/,regexText:'<%= t(:onlyentereightnumber) %>'}); 
+	form.insert(0,firstField)
+        edit_window.show();
+        edit_window.setTitle('<%= t('addbommaterial') %>');
+    }  else if(type == "edit"){
+           if(rows.length==1){
+	            form.getForm().setValues({
+	                bom_id:'<%= Bomfile.where(:project_id=>params[:project_id]).where(:filename=>params[:filename]).first.id %>',
+	                id: rows[0].get('id'),
+	                name:rows[0].get("name"),
+	                partNum:rows[0].get("partnum"),
+	                quantity:rows[0].get("quantity"),
+	                partRef: rows[0].get('partRef'),
+	                footprint:rows[0].get("footprint"),
+	                code: rows[0].get('code'),
+                    partparams: rows[0].get('partparams'),
+	                manufacturer: rows[0].get('manufacturer'),
+	                module: rows[0].get('module'),
+	                comment: rows[0].get('comment')
+	            });
+	            edit_window.show();
+	            edit_window.setTitle('<%= t('editmaterial') %>'+rows[0].get('code'));
+            }
+            else
+            {
+	            show_tip_message('<%= t('choseadata') %>')
+             }
+        }
+        else
+        {
+            if(rows.length==1){
+             Ext.MessageBox.confirm('Delete', '<%= t('are you sure') %>', function(btn){
+			 if(btn === 'yes'){
+                       Ext.Ajax.request({
+			    		url: 'bom/material_delete',
+			    		params: { bom_id : '<%= Bomfile.where(:project_id=>params[:project_id]).where(:filename=>params[:filename]).first.id %>', id: rows[0].get('id') },
+			    		success: function(response){
+			       			var obj = Ext.decode(response.responseText);
+	                        if (obj.success) {
+	                             store.reload();
+	                        } else {
+	                            show_tip_message("false")
+	                        }
+                          },
+                      	failure: function(response) {
+                              show_tip_message("false")
+                          }                
+                      });
+                    }
+				});  
+              }
+		    else
+		    {
+		    show_tip_message('<%= t('choseadata') %>')
+		    }
+        }
+};
+function code_search(type){
+    if(type=="search"){
+        if(true){
+            Ext.getCmp("clear"+index).enable();
+            store.load({
+		    params:{
+		        start:0,
+		        limit: itemsPerPage,
+		        value : Ext.getCmp("tab"+index).getValue(),
+	        	type: Ext.getCmp("search_code"+index).getValue()
+		    }
+              });
+        }else{
+            show_tip_message('<%= t('enter key word') %>')
+        }
+    }else if(type=="clear"){
+        Ext.getCmp("clear"+index).disable();
+        Ext.getCmp("tab"+index).setValue('');
+        store.load({
+		    params:{
+		        start:0,
+		        limit: itemsPerPage,
+		    }
+       });
+    }
+}
+Ext.regModel('PostInfo', {
+		    fields: [{name: 'key'},{name: 'value'}]
+		});
+var postStore = Ext.create('Ext.data.Store',{
+			model : 'PostInfo',
+			data : [
+				{key:'<%= t('all') %>',value:'100000'},
+				{key:'<%= t('code') %>',value:'101100'},
+                {key:'<%= t('partRef') %>',value:'102200'},
+				{key:'<%= t('name') %>',value:'103300'},
+                {key:'<%= t('partNum') %>',value:'104400'},
+                {key:'<%= t('module') %>',value:'105500'},
+			]
+		});	
+var index = tabpanel.items.length + 1;
+var grid=Ext.create('Ext.grid.Panel', {
+    title: '<%= params[:filename].split('.')[0] %>',
+    store: store,
+    columns: [
+            {
+            xtype: 'rownumberer',
+            width: 60,
+            sortable: false,
+            header: '<%= t(:index) %>', 
+            align: 'center'
+            },
+           {
+            width: 60,
+            sortable: false,
+            header: '<%= t(:flocation) %>', 
+            align: 'center',
+            hidden: true
+           },
+          { header: '<%= t(:id) %>',  dataIndex: 'id', flex: 1, align: 'center', hidden: true },
+          { header: '<%= t(:code) %>',  dataIndex: 'code', flex: 1, align: 'center', sortable: true },
+          { header: '<%= t(:partRef) %>',  dataIndex: 'partref', flex: 1, align: 'center' },
+          { header: '<%= t(:name) %>',  dataIndex: 'name', flex: 1, align: 'center' },
+          { header: '<%= t(:partparams) %>',  dataIndex: 'partparams', flex: 1, align: 'center' },
+          { header: '<%= t(:partNum) %>',  dataIndex: 'partnum', flex: 1, align: 'center' },
+          { header: '<%= t(:footprint) %>',  dataIndex: 'footprint', flex: 1, align: 'center', renderer: function download(value,meta,record){
+         if (record.get('flocation') == 'yes') {
+			return "<a href='bom/download?code="+record.get('code')+"'>"+value+"</a>";
+			} else {
+			return  "<a style='color:red;' href='#' onclick="+'"'+"alert('<%= t('footprint not exist') %>')"+'"' +" >"+value+"</a>" ;
+			}
+         } },
+        { header: '<%= t(:manufacturer) %>',  dataIndex: 'manufacturer', flex: 1, align: 'center' },
+        { header: '<%= t(:module) %>',  dataIndex: 'module', flex: 1, align: 'center' },
+        { header: '<%= t(:comment) %>',  dataIndex: 'comment', flex: 1, align: 'center' },
+    ],
+    width: 400,
+    height: 125,
+    selType: 'rowmodel',
+    dockedItems: [
+       {
+    	xtype: 'toolbar',
+    	dock: 'top',
+    	items: [
+        	{ text: '<%= t('update bom') %>', iconCls:"silk-user_add", handler: function() {
+				                    boms_handler("update")
+				                }},
+           	{ text: '<%= t('delete bom') %>', iconCls:"silk-user_add", handler: function() {
+				                    boms_handler("delete")
+				                }},
+           	{ text: '<%= t('bom cal') %>', iconCls:"silk-user_add", handler: function() {
+				                    boms_handler("help")
+				                }},
+   			{ text: '<%= t('bom max') %>', iconCls:"silk-user_add", handler: function() { boms_handler("max") }}, 				{ text: '<%= t('bom cost cal') %>', iconCls:"silk-user_add", handler: function() { boms_handler("value") }}, '<%= button_to '按参考编号下载', bom_download1_path(:id=>fileid, format: 'xls') %>','<%= button_to '按元件型号下载', bom_download2_path(:id=>fileid, format: 'xls') %>', '<%= button_to '下载全部封装', bom_download_path(:code=>'000',:id=>fileid) %>'
+    ]
+	},
+    {
+    xtype: 'pagingtoolbar',
+    store: store,   // same store GridPanel is using
+    dock: 'bottom',
+    displayInfo: true,   
+    items:[
+            '-',
+            { text: '<%= t('add') %>', iconCls:"silk-user_add", handler: function() {
+                bom_action_handler("add")
+            }},
+            { text: '<%= t('edit') %>', iconCls:"silk-user_edit", handler: function() {
+                bom_action_handler("edit");
+            }},
+            { text:  '<%= t('delete') %>', iconCls:"silk-user_delete", handler: function() {
+                bom_action_handler("delete")
+            }},
+	{
+		id:"search_code"+index,
+		width: 120,
+		xtype : 'combo',
+		listConfig : {
+			emptyText : 'no match data', 
+			maxHeight : 120 
+		},
+		name:'post',
+		autoSelect : true,
+		triggerAction: 'all', 
+		store : postStore, 
+		displayField:'key', 
+		valueField:'value', 
+		queryMode: 'local', 
+		forceSelection : true, 
+		typeAhead : true, 
+		value:'100000',
+	},
+	{
+		xtype: 'textfield',
+		hideLabel: true,
+		width: 150,
+		id: "tab"+index,
+	},
+	{ text: '<%= t('search') %>',id:"search"+index, iconCls:"silk-zoom", handler:function(){code_search("search")} },
+	{ text: '<%= t('clear') %>', id:"clear"+index, disabled:true, handler: function(){code_search("clear")} } 
+    ]       
+    }],
+});
+/////////////////
+var sparam='<%= params[:filename] %>';
+function boms_handler(type){
+ if(type=='update')
+ {
+   var form = new Ext.form.Panel({
+        width: 500,
+        frame: true,
+        title: '<%= t('update bom') %>',
+        bodyPadding: '10 10 0',
+        height: 300,
+        defaults: {
+            anchor: '100%',
+            allowBlank: false,
+            msgTarget: 'side',
+            labelWidth: 70
+        },
+        items: [
+        {xtype:"hidden",name: "id"},
+        {xtype:"hidden",name: "bom", value: '<%= params[:filename] %>' },
+          {
+            xtype: 'filefield',
+            fieldLabel: '<%= t('filelocation') %>',
+            name: 'photo',
+            buttonText: '',
+            buttonConfig: {
+                iconCls: 'upload-icon'
+            },
+            regex: /(.)+((\.csv)|(\.xls)(\w)?)$/i,
+            regexText: 'wrong file extension'
+        }          
+        ],
+        buttonAlign:"center",
+        buttons: [
+            {
+            text: '<%= t('save') %>',
+            handler: function(){
+               var form = this.up('form').getForm();
+                if(form.isValid()){
+                    form.submit({
+                        url: 'bom/update.json',
+                        waitMsg: '<%= t('update bom') %>',
+                        success: function(fp, o) {
+                           	show_tip_message(o.result.message+'<%= t(:uploadsuccess) %>'),
+                           	form.reset(),													 								edit_window.close(),
+							store.reload(),							console.log(o)
+                        }
+                    });
+                }
+             
+            }
+        },{
+            text: '<%= t('reset') %>',
+            handler: function() {
+                this.up('form').getForm().reset();
+            }
+        }
+        ]
+        });
+    var edit_window = new Ext.Window({
+        width:280,
+        height:200,
+        resizable:false,
+        layout:"fit",
+        closeAction:'close',
+        plain: true,
+        constrainHeader:true,
+        modal:true,
+        bodyStyle: 'padding:5px;',
+        items:[form]
+    });
+    form.getForm().setValues({
+        id: '<%= params[:project_id] %>'
+    });
+    edit_window.show();
+}
+else if(type=='delete') {
+  	Ext.MessageBox.confirm('<%= t('delete') %>', '<%= t('are you sure') %>', function(btn){
+	if(btn === 'yes'){
+        Ext.Ajax.request({
+		    url: 'bom/bom_delete',
+		    params: {id: '<%= params[:project_id] %>', bom: '<%= params[:filename] %>'},
+		    success: function(response){
+                    store.reload();
+                    tabpanel.remove(Ext.getCmp('<%= params[:project_id]+params[:filename] %>'+index));
+                    tabpanel.setActiveTab(0);
+                    },
+            failure: function(response) {
+                    show_tip_message("false")
+                }                
+       });
+   	}
+	else{
+		   }
+	});
+ }
+else if(type=='help'){
+     var form = new Ext.form.Panel({
+        width: 500,
+        frame: true,
+        title: '<%= t('bom cal') %>',
+        bodyPadding: '10 10 0',
+        height: 300,
+        defaults: {
+            anchor: '100%',
+            allowBlank: false,
+            msgTarget: 'side',
+            labelWidth: 100
+        },
+        items: [
+        {xtype:"hidden",name: "id"},
+        {
+            xtype: 'numberfield',
+            fieldLabel: '<%= t('make suit') %>',
+            value: 1,
+            name: 'number',
+            minValue:0,
+            negativeText: '<%= t('mustnotnegative') %>', 
+        }          
+        ],
+        buttonAlign:"center",
+        buttons: [
+            {
+            text: '<%= t('save') %>',
+            handler: function(){
+               var form = this.up('form').getForm();
+               var code = form.findField('number');
+               var id = form.findField('id');
+                if(form.isValid()){
+                     Ext.Ajax.request({
+			    		url: 'bom/bom_help.js',
+			  			params: {number: code.getValue(),bomfile: '<%= params[:filename] %>', project_id: '<%= params[:project_id] %>'},
+			    		success: function(response){
+                        eval(response.responseText);
+                        edit_window.close()
+                    	},
+                		failure: function(response) {
+                        show_tip_message("false")
+                    	}                
+                });
+                }
+            }
+        },{
+            text: '<%= t('reset') %>',
+            handler: function() {
+                this.up('form').getForm().reset();
+            }
+        }
+        ]
+        });
+    var edit_window = new Ext.Window({
+        width:280,
+        height:200,
+        resizable:false,
+        layout:"fit",
+        closeAction:'close',
+        plain: true,
+        constrainHeader:true,
+        modal:true,
+        bodyStyle: 'padding:5px;',
+        items:[form]
+    });
+    form.getForm().setValues({
+        id: '<%= params[:project_id] %>'
+    });
+    edit_window.show();
+}
+else if(type=='max'){
+	  <% a=params[:filename] %>
+	  <% b=params[:project_id] %>
+	  show_tip_message('<%= t('bom max') %>'+'<%= Bom.max(a,b) %>'+'<%= t('situ') %>')
+}
+else {
+   Ext.Ajax.request({
+		url: 'bom/bom_value.js',
+		params: {bomfile: '<%= params[:filename] %>', project_id: '<%= params[:project_id] %>'},
+		success: function(response){
+			eval(response.responseText);
+		},
+		failure: function(response) {
+			show_tip_message("false")
+		}                
+	});
+}
+};
+var fileMenu = new Ext.menu.Menu({//文件创建菜单
+		shadow : 'frame',//设置菜单四条边都有阴影
+		allowOtherMenus : true,
+		items : [
+			new Ext.menu.Item({
+				text: '新建',//菜单项名称
+				menuHideDelay:1000,
+				handler:onMenuItem//菜单项处理函数
+			}),//添加菜单项
+			{text: '打开',handler:onMenuItem},
+			
+		]
+	});
+function onMenuItem(item){ 
+	if(item.text=='新建'){
+			alert(item.text); 
+                        }
+		};
+var toolbar = new Ext.toolbar.Toolbar({ 
+			dock: 'top',
+			width:300
+		});
+
+grid.addDocked(toolbar);
+
+var tabPage = tabpanel.add({ 
+	items : [grid],
+	closable : true,
+    width: 3000,
+    layout:'fit',
+    id: '<%= params[:project_id]+params[:filename] %>'+index,
+    tabConfig: {
+            title: '<%= Bomfile.where(:project_id=>params[:project_id]).where(:filename=>params[:filename]).first.filename.split('.')[0] %>',
+            tooltip: '<%= Bomfile.where(:project_id=>params[:project_id]).where(:filename=>params[:filename]).first.filename.split('.')[0] %>'
+        } 
+})
+tabpanel.setActiveTab(tabPage); 

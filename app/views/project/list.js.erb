@@ -1,0 +1,1227 @@
+﻿Ext.Ajax.defaultHeaders = { 'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content') };
+﻿function project_handler(type) {
+    var form = new Ext.form.Panel({
+        id: 'form',
+        baseCls: 'x-plain',
+        labelWidth: 60,
+        border:false,
+        layout:"form",
+        items: [
+            {xtype:"hidden",name: "id"},    
+            {xtype:"textfield",fieldLabel: '<%= t(:name) %>', name: "name",anchor:'95%'},         
+            {xtype:"textfield",fieldLabel: '<%= t(:manager) %>', name: "manager",anchor:'95%'},
+            {xtype:"textfield",fieldLabel: '<%= t(:menber) %>', name: "menber",anchor:'95%'},
+            {xtype:"textarea",fieldLabel: '<%= t('describe project') %>', name: "describes",anchor:'95%'}
+            ],
+        buttonAlign:"center",  
+        buttons: [
+            {
+                text: '<%= t('save') %>',
+                handler:function() {             
+                    if (form.getForm().isValid()) {
+                      switch (type) {
+                      case "add":
+                      Ext.Ajax.request({
+						url: 'project/project_add',
+					        params: form.getForm().getValues(true,false,false,false),
+						success: function(response){
+							var obj = Ext.decode(response.responseText);
+	                        if (obj.success) {
+	                             edit_window.close();
+	                             store.reload();    
+	                        } else {
+	                            show_tip_message('<%= t('project exist') %>')
+	                        }
+                          },
+                      	failure: function(response) {
+                              show_tip_message("false")
+                          }                
+                      });
+                      break;
+                      case "edit": 
+                      Ext.Ajax.request({
+						 url: 'project/project_edit',
+						 params: form.getForm().getValues(true,false,false,false),
+						 success: function(response){
+						  var obj = Ext.decode(response.responseText);
+	                        if (obj.success) {
+	                             edit_window.close();
+	                             store.reload();
+	                        } else {
+	                            show_tip_message('<%= t('project exist') %>')
+	                        }
+                          },
+	                     failure: function(response) {
+	                            show_tip_message("false")
+	                          }                
+                      });
+                      break;
+                      }     //switch
+                   }       //form  
+                   }      //handler 
+             },                    
+            {
+                text: '<%= t('cancel') %>',
+                handler:function() {
+                    edit_window.hide()
+                }
+            }
+        ]
+        });
+    var edit_window = new Ext.Window({
+        width:380,
+        height:300,
+        resizable:false,
+        layout:"fit",
+        closeAction:'close',
+        plain: true,
+        constrainHeader:true,
+        modal:true,
+        bodyStyle: 'padding:5px;',
+        items:[form]
+    }); 
+  var rows = grid.getSelectionModel().getSelection();
+    if (type == "add") {
+        edit_window.show();
+        edit_window.setTitle('<%= t('addproject') %>');
+    }  else if(type == "edit"){
+           if(rows.length==1){ 
+            form.getForm().setValues({
+                id:rows[0].get("id"),
+                name:rows[0].get("name"),
+                manager:rows[0].get("manager"),
+                describes:rows[0].get("describes"),
+                menber:rows[0].get("menber"),
+            });
+            edit_window.show();
+            edit_window.setTitle('<%= t('editproject') %>');
+            }
+            else
+            {
+            show_tip_message('<%= t('choseadata') %>')
+             }
+        }
+        else
+        {
+              if(rows.length==1){
+               Ext.MessageBox.confirm('<%= t('delete this project') %>', '<%= t('are you sure') %>', function(btn){
+		   if(btn === 'yes'){
+                 Ext.Ajax.request({
+					   url: 'project/project_delete',
+					   params: { id : rows[0].get("id") },
+					   success: function(response){
+					   var obj = Ext.decode(response.responseText);
+	                        if (obj.success) {
+	                             store.reload();
+	                        } else {
+	                            show_tip_message("false")
+	                        }
+                          },
+                       failure: function(response) {
+                              show_tip_message("false")
+                          }                
+                       });
+                       } })
+                      }
+                      
+                      else
+                      {
+                       show_tip_message('<%= t('choseadata') %>')
+                      }
+        }
+}
+
+itemsPerPage = 20;   // set the number of items you want per page
+var store = Ext.create('Ext.data.Store', {
+    autoLoad: false,
+    fields:['name', 'manager','menber', 'describes'],
+    pageSize: itemsPerPage, // items per page
+    proxy: {
+        type: 'ajax',
+        url: 'project/lists.json',  // url that will load data with respect to start and limit params
+        reader: {
+            type: 'json',
+            root: 'gridData',
+            totalProperty: 'totalCount'
+        },
+    }  
+});
+
+// specify segment of data you want to load using params
+store.load({
+    params:{
+        start:0,
+        limit: itemsPerPage,
+    }
+});
+var grid=Ext.create('Ext.grid.Panel', {
+ //   title: 'Simpsons',
+    store: store,
+    columns: [
+    {
+            xtype: 'rownumberer',
+            width: 60,
+            sortable: false,
+            header: '<%= t('index') %>', 
+            align: 'center'
+        },
+        { header: '<%= t('name') %>',  dataIndex: 'name', flex: 1, align: 'center'  },
+        { header: '<%= t('manager') %>',  dataIndex: 'manager', flex: 1, align: 'center'  },
+        { header: '<%= t('menber') %>',  dataIndex: 'menber', flex: 1, align: 'center' },
+        { header: '<%= t('describe project') %>',  dataIndex: 'describes', flex: 1, align: 'center' },
+    ],
+    width: 400,
+    height: 125,
+    selType: 'rowmodel',
+    dockedItems: [{
+        xtype: 'pagingtoolbar',
+        store: store,   // same store GridPanel is using
+        dock: 'bottom',
+        displayInfo: true,   
+        items:[
+                '-',
+                { text: '<%= t('add project') %>', iconCls:"silk-user_add", handler: function() {
+				                    project_handler("add")
+				                }},
+				{ text: '<%= t('edit project') %>', iconCls:"silk-user_edit", handler: function() {
+				                   project_handler("edit")
+				                }},
+				{ text: '<%= t('delete project') %>', iconCls:"silk-user_delete", handler: function() {
+				                   project_handler("delete")
+				                }},
+                ]       
+    }],
+    
+});
+var fileMenu = new Ext.menu.Menu({//文件创建菜单
+			shadow : 'frame',//设置菜单四条边都有阴影
+			allowOtherMenus : true,
+			items : [
+				new Ext.menu.Item({
+					text: '新建',//菜单项名称
+					menuHideDelay:1000,
+					handler:onMenuItem//菜单项处理函数
+				}),//添加菜单项
+				{text: '打开',handler:onMenuItem},
+				{text: '关闭',handler:onMenuItem},
+                {text: '关',handler:onMenuItem},
+                {text: '开',handler:onMenuItem}
+			]
+		});
+function onMenuItem(item){ 
+	    if(item.text=='新建'){
+		alert(item.text); 
+	    var form = new Ext.form.Panel({
+	        width: 500,
+	        frame: true,
+	        title: 'File Upload Form',
+	        bodyPadding: '10 10 0',
+	        height: 300,
+	        defaults: {
+	            anchor: '100%',
+	            allowBlank: false,
+	            msgTarget: 'side',
+	            labelWidth: 50
+	        },
+        items: [
+        {xtype:"hidden",name: "id"},
+          {
+            xtype: 'filefield',
+       //     id: 'form-file',
+            emptyText: 'Select an file',
+            fieldLabel: 'file',
+            name: 'file',
+            buttonText: '',
+            buttonConfig: {
+                iconCls: 'upload-icon'
+            },
+            regex: /(.)+((\.csv)|(\.xls)(\w)?)$/i,
+            regexText: 'wrong file extension'
+        }          
+        ],
+        buttonAlign:"center",
+        buttons: [
+            {
+            text: 'Save',
+            handler: function(){
+               var form = this.up('form').getForm();
+                if(form.isValid()){
+                    form.submit({
+                        url: 'bom/upload.json',
+                        waitMsg: 'Uploading your file...',
+                        success: function(fp, o) {
+                   		show_tip_message(o.result.message+'<%= t(:uploadsuccess) %>'),			
+                       	form.reset(),										                 						edit_window.close(),
+						console.log(o)
+                        }
+                    });
+                }
+             
+            }
+	        },{
+	            text: 'Reset',
+	            handler: function() {
+	                this.up('form').getForm().reset();
+	            }
+	        }
+	        ]
+	        });
+    var edit_window = new Ext.Window({
+        width:280,
+        height:180,
+        resizable:false,
+        layout:"fit",
+        closeAction:'close',
+        plain: true,
+        constrainHeader:true,
+        modal:true,
+        bodyStyle: 'padding:5px;',
+        items:[form]
+    });
+   var rows = grid.getSelectionModel().getSelection();
+    if(rows.length==1){
+        form.getForm().setValues({
+            id: rows[0].get("id")
+        });
+        edit_window.show();
+        edit_window.setTitle('<%= t('edit code') %>');
+        }
+        else if(rows.length>1)
+        {
+        show_tip_message('<%= t('chose one more data') %>')
+        }
+        else {
+        show_tip_message('<%= t('choseadata') %>')
+        }
+        }
+        else if(item.text=='打开'){
+            alert(item.text);
+			Ext.regModel('BookInfo', {
+		    fields: [{name: 'filename'}, {name: 'id'}]
+		});
+		
+		var bomStore = Ext.create('Ext.data.Store',{
+			model : 'BookInfo',
+			proxy: {
+			         type: 'ajax',
+			         url: 'project/boms.json',
+			         reader: {
+			             type: 'json',
+			             root: 'gridData'
+			         }
+			         }
+		});
+        var form = new Ext.form.Panel({
+        width: 500,
+        frame: true,
+        title: 'File Upload Form',
+        bodyPadding: '10 10 0',
+        height: 300,
+        defaults: {
+            anchor: '100%',
+            allowBlank: false,
+            msgTarget: 'side',
+            labelWidth: 50
+        },
+        items: [
+        {xtype:"hidden",name: "id"},
+        {
+		xtype : 'combo',
+		fieldLabel:'<%= t('suppliers') %>',
+		listConfig : {
+			loadingText : 'loading',
+			emptyText : '<%= t('no match') %>',
+			maxHeight : 100
+		},
+		minChars : 1,
+		queryDelay : 300,
+		queryParam : 'filename',
+		store : bomStore,
+		displayField:'filename',
+		valueField:'filename',
+		queryMode: 'remote',
+        forceSelection: true,
+        emptyText:'<%= t(:pleasechosesupplier) %>',
+        name: 'bom',
+        listeners : {
+		  'beforequery' : function(qe) {
+			this.clearValue();
+			delete this.lastQuery;
+			this.store.proxy.extraParams = {
+			id: rows[0].get("id")
+			}  
+			}}   
+		},
+        {
+            xtype: 'filefield',
+            emptyText: 'Select an file',
+            fieldLabel: 'file',
+            name: 'file',
+            buttonText: '',
+            buttonConfig: {
+                iconCls: 'upload-icon'
+            },
+            regex: /(.)+((\.csv)|(\.xls)(\w)?)$/i,
+            regexText: 'wrong file extension'
+        }          
+        ],
+        buttonAlign:"center",
+        buttons: [
+            {
+            text: 'Save',
+            handler: function(){
+            var form = this.up('form').getForm();
+	        if(form.isValid()){
+	            form.submit({
+	                url: 'bom/update.json',
+	                waitMsg: 'Uploading your file...',
+	                success: function(fp, o) {
+	                    show_tip_message(o.result.message+'<%= t(:uploadsuccess) %>'),
+						form.reset(),													 							edit_window.close(),						console.log(o)
+                        }
+                    });
+                }
+             
+            }
+        },{
+            text: 'Reset',
+            handler: function() {
+                this.up('form').getForm().reset();
+            }
+        }
+        ]
+
+        });
+    var edit_window = new Ext.Window({
+        width:280,
+        height:300,
+        resizable:false,
+        layout:"fit",
+        closeAction:'close',
+        plain: true,
+        constrainHeader:true,
+        modal:true,
+        bodyStyle: 'padding:5px;',
+        items:[form]
+    });
+   var rows = grid.getSelectionModel().getSelection(); 
+    if(rows.length==1){
+        form.getForm().setValues({
+            id: rows[0].get("id")
+        });
+        edit_window.show();
+        edit_window.setTitle('<%= t('edit code') %>');
+        }
+        else if(rows.length>1)
+        {
+        show_tip_message('<%= t('chose one more data') %>')
+        }
+        else {
+        show_tip_message('<%= t('choseadata') %>')
+        }
+	 }
+    else if(item.text=='关闭') {
+        alert(item.text);
+        Ext.regModel('BookInfo', {
+    fields: [{name: 'filename'}, {name: 'id'}]
+		});
+		
+var bomStore = Ext.create('Ext.data.Store',{
+	model : 'BookInfo',
+	proxy: {
+	         type: 'ajax',
+	         url: 'project/boms.json',
+	         reader: {
+	             type: 'json',
+	             root: 'gridData'
+	         }
+	         }
+	});
+       var form = new Ext.form.Panel({
+        width: 500,
+        frame: true,
+        title: 'File Upload Form',
+        bodyPadding: '10 10 0',
+        height: 300,
+        defaults: {
+            anchor: '100%',
+            allowBlank: false,
+            msgTarget: 'side',
+            labelWidth: 50
+        },
+
+        items: [
+        {xtype:"hidden",name: "id"},
+        {
+		xtype : 'combo',
+		fieldLabel:'<%= t('suppliers') %>',
+		listConfig : {
+			loadingText : 'loading',
+			emptyText : '<%= t('no match') %>',
+			maxHeight : 100
+		},
+		minChars : 1,
+		queryDelay : 300,
+		queryParam : 'filename',
+		store : bomStore,
+		displayField:'filename',
+		valueField:'filename',
+		queryMode: 'remote',
+        forceSelection: true,
+        emptyText:'<%= t(:pleasechosesupplier) %>',
+        name: 'bom',
+        listeners : {
+		  'beforequery' : function(qe) {
+			this.clearValue();
+			delete this.lastQuery;
+			this.store.proxy.extraParams = {
+			id: rows[0].get("id")
+			}  
+			}}   
+		}
+        ],
+        buttonAlign:"center", 
+        buttons: [
+            {
+            text: 'Save',
+            handler: function(){
+               var form = this.up('form').getForm();
+                if(form.isValid()){
+                    form.submit({
+                        url: 'bom/bom_delete.json',
+                        waitMsg: 'Uploading your file...',
+                        success: function(fp, o) {
+                           	show_tip_message(o.result.message+'<%= t(:uploadsuccess) %>'),
+							form.reset(),
+							edit_window.close()
+                        }
+                    });
+                }
+            }
+        },{
+            text: 'Reset',
+            handler: function() {
+                this.up('form').getForm().reset();
+            }
+        }
+        ]
+        });
+    var edit_window = new Ext.Window({
+        width:280,
+        height:300,
+        resizable:false,
+        layout:"fit",
+        closeAction:'close',
+        plain: true,
+        constrainHeader:true,
+        modal:true,
+        bodyStyle: 'padding:5px;',
+        items:[form]
+    });
+var rows = grid.getSelectionModel().getSelection();
+    if(rows.length==1){
+    form.getForm().setValues({
+            id: rows[0].get("id")
+        });
+        edit_window.show();
+        edit_window.setTitle('<%= t('edit code') %>');
+    }
+    else if(rows.length>1)
+    {
+    show_tip_message('<%= t('chose one more data') %>')
+    }
+    else {
+    show_tip_message('<%= t('choseadata') %>')
+    }
+	}
+    else if(item.text=='关'){
+    	alert(item.text);
+    	Ext.regModel('BookInfo', {
+fields: [{name: 'filename'}, {name: 'id'}]
+	});
+		
+var bomStore = Ext.create('Ext.data.Store',{
+	model : 'BookInfo',
+	proxy: {
+	         type: 'ajax',
+	         url: 'project/boms.json',
+	         reader: {
+	             type: 'json',
+	             root: 'gridData'
+	         }
+	         }
+});
+	var form = new Ext.form.Panel({
+        width: 500,
+        frame: true,
+        title: 'File Upload Form',
+        bodyPadding: '10 10 0',
+        height: 300,
+        defaults: {
+            anchor: '100%',
+            allowBlank: false,
+            msgTarget: 'side',
+            labelWidth: 50
+        },
+        items: [
+        {xtype:"hidden",name: "id"},
+        {
+		xtype : 'combo',
+		fieldLabel:'<%= t('suppliers') %>',
+		listConfig : {
+			loadingText : 'loading',
+			emptyText : '<%= t('no match') %>',
+			maxHeight : 100
+		},
+		minChars : 1,
+		queryDelay : 300,
+		queryParam : 'filename',
+		store : bomStore,
+		displayField:'filename',
+		valueField:'filename',
+		queryMode: 'remote',
+        forceSelection: true,
+        emptyText:'<%= t(:pleasechosesupplier) %>',
+        name: 'bom',
+        listeners : {
+			'beforequery' : function(qe) {
+			this.clearValue();
+			delete this.lastQuery;
+			this.store.proxy.extraParams = {
+			id: rows[0].get("id")
+			}  
+		}}   
+		}
+        ],
+        buttonAlign:"center",
+        buttons: [
+            {
+            text: 'Save',
+            handler: function(){
+               var form = this.up('form').getForm();
+               var code = form.findField('bom');
+                var id = form.findField('id');
+                if(form.isValid()){
+                	Ext.Ajax.request({
+				    url: 'bom/bom_show.js',
+			 		params: {filename: code.getValue(), project_id: id.getValue()},
+				    success: function(response){
+	                        show_tip_message("success");
+	                        eval(response.responseText)
+	                    },
+	                failure: function(response) {
+	                        show_tip_message("false")
+	                    }                
+                });
+                }
+            }
+        },{
+            text: 'Reset',
+            handler: function() {
+                this.up('form').getForm().reset();
+            }
+        }
+        ]
+        });
+    var edit_window = new Ext.Window({
+        width:280,
+        height:300,
+        resizable:false,
+        layout:"fit",
+        closeAction:'close',
+        plain: true,
+        constrainHeader:true,
+        modal:true,
+        bodyStyle: 'padding:5px;',
+        items:[form]
+    });
+var rows = grid.getSelectionModel().getSelection();
+    if(rows.length==1){
+    form.getForm().setValues({
+        id: rows[0].get("id")
+    });
+    edit_window.show();
+    edit_window.setTitle('<%= t('edit code') %>');
+    }
+    else if(rows.length>1)
+    {
+    show_tip_message('<%= t('chose one more data') %>')
+    }
+    else {
+    show_tip_message('<%= t('choseadata') %>')
+    }
+    }else {
+    alert(item.text);
+    Ext.regModel('BookInfo', {
+	fields: [{name: 'filename'}, {name: 'id'}]
+	});
+		
+var bomStore = Ext.create('Ext.data.Store',{
+	model : 'BookInfo',
+	proxy: {
+	         type: 'ajax',
+	         url: 'project/boms.json',
+	         reader: {
+	             type: 'json',
+	             root: 'gridData'
+	         }
+	         }
+});
+	var form = new Ext.form.Panel({
+        width: 500,
+        frame: true,
+        title: 'File Upload Form',
+        bodyPadding: '10 10 0',
+        height: 300,
+        defaults: {
+            anchor: '100%',
+            allowBlank: false,
+            msgTarget: 'side',
+            labelWidth: 50
+        },
+        items: [
+        {xtype:"hidden",name: "id"},
+        {
+		xtype : 'combo',
+		fieldLabel:'<%= t('suppliers') %>',
+		listConfig : {
+			loadingText : 'loading',
+			emptyText : '<%= t('no match') %>',
+			maxHeight : 100
+		},
+		minChars : 1,
+		queryDelay : 300,
+		queryParam : 'filename',
+		store : bomStore,
+		displayField:'filename',
+		valueField:'filename',
+		queryMode: 'remote',
+        forceSelection: true,
+        emptyText:'<%= t(:pleasechosesupplier) %>',
+        name: 'bom',
+        listeners : {
+			'beforequery' : function(qe) {
+			this.clearValue();
+			delete this.lastQuery;
+			this.store.proxy.extraParams = {
+			id: rows[0].get("id")
+			}  
+			}}   
+		},
+        {
+            xtype: 'numberfield',
+            fieldLabel: 'number',
+            value: 1,
+            name: 'number' 
+        }          
+        ],
+        buttonAlign:"center",
+        buttons: [
+            {
+            text: 'Save',
+            handler: function(){
+               var form = this.up('form').getForm();
+               var code = form.findField('bom');
+               var id = form.findField('id');
+                if(form.isValid()){
+                     Ext.Ajax.request({
+					    url: 'bom/bom_help.js',
+					  	params: {bomfile: code.getValue(), project_id: id.getValue()},
+					    success: function(response){
+		                        show_tip_message("success");
+		                        eval(response.responseText)
+		                    },
+		                failure: function(response) {
+		                        show_tip_message("false")
+		                    }                
+                });
+                }
+            }
+        },{
+            text: 'Reset',
+            handler: function() {
+                this.up('form').getForm().reset();
+            }
+        }
+        ]
+        });
+    var edit_window = new Ext.Window({
+        width:280,
+        height:300,
+        resizable:false,
+        layout:"fit",
+        closeAction:'close',
+        plain: true,
+        constrainHeader:true,
+        modal:true,
+        bodyStyle: 'padding:5px;',
+        items:[form]
+    });
+   var rows = grid.getSelectionModel().getSelection();
+    if(rows.length==1){
+    form.getForm().setValues({
+        id: rows[0].get("id")
+    });
+    edit_window.show();
+    edit_window.setTitle('<%= t('edit code') %>');
+    }
+    else if(rows.length>1)
+    {
+    show_tip_message('<%= t('chose one more data') %>')
+    }
+    else {
+    show_tip_message('<%= t('choseadata') %>')
+    }
+    }
+	};
+function boms_action_handler(type){
+ if(type=='add')
+  {
+      var form = new Ext.form.Panel({
+        width: 300,
+        frame: true,
+        title: '<%= t('upload bom') %>',
+        bodyPadding: '10 10 0',
+        height: 300,
+        defaults: {
+            anchor: '100%',
+            allowBlank: false,
+            msgTarget: 'side',
+            labelWidth: 80
+        },
+        items: [
+        {xtype:"hidden",name: "id"},
+        {
+        xtype: 'filefield',
+        emptyText: '<%= t('select file') %>',
+        fieldLabel: '<%= t('filelocation') %>',
+        name: 'file',
+        buttonText: '',
+        buttonConfig: {
+            iconCls: 'upload-icon'
+        },
+        regex: /(.)+((\.csv)|(\.xls)(\w)?)$/i,
+        regexText: '<%= t('wrong file type') %>'
+        }          
+        ],
+        buttonAlign:"center",
+        buttons: [
+            {
+            text: '<%= t(:save) %>',
+            handler: function(){
+               var form = this.up('form').getForm();
+                if(form.isValid()){
+                    form.submit({
+                        url: 'bom/upload.json',
+                        waitMsg: '<%= t('on upload') %>',
+                        success: function(fp, o) {
+                       	show_tip_message(o.result.message+'<%= t(:uploadsuccess) %>'),			
+                       	form.reset(),										                 						edit_window.close(),
+						console.log(o)
+                        }
+                    });
+                }
+            }
+        },{
+            text: '<%= t(:reset) %>',
+            handler: function() {
+                this.up('form').getForm().reset();
+            }
+        }
+        ]
+        });
+    var edit_window = new Ext.Window({
+        width:300,
+        height:180,
+        resizable:false,
+        layout:"fit",
+        closeAction:'close',
+        plain: true,
+        constrainHeader:true,
+        modal:true,
+        bodyStyle: 'padding:5px;',
+        items:[form]
+    });
+   var rows = grid.getSelectionModel().getSelection();
+    if(rows.length==1){
+        form.getForm().setValues({
+            id: rows[0].get("id")
+        });
+        edit_window.show();
+        }
+        else if(rows.length>1)
+        {
+        show_tip_message('<%= t('chose one more data') %>')
+        }
+        else {
+        show_tip_message('<%= t('choseadata') %>')
+        } 
+   }
+  else if(type=='show'){
+   Ext.regModel('BookInfo', {
+		    fields: [{name: 'filename'}, {name: 'id'}]
+		});
+		
+var bomStore = Ext.create('Ext.data.Store',{
+	model : 'BookInfo',
+	proxy: {
+	         type: 'ajax',
+	         url: 'project/boms.json',
+	         reader: {
+	             type: 'json',
+	             root: 'gridData'
+	         }
+	         }
+});
+      var form = new Ext.form.Panel({
+        width: 500,
+        frame: true,
+        title: '<%= t('view bom') %>',
+        bodyPadding: '10 10 0',
+        height: 300,
+        defaults: {
+            anchor: '100%',
+            allowBlank: false,
+            msgTarget: 'side',
+            labelWidth: 80
+        },
+
+        items: [
+        {xtype:"hidden",name: "id"},
+        {
+		xtype : 'combo',
+		fieldLabel:'<%= t('chose bom') %>',
+		listConfig : {
+			loadingText : 'loading',
+			emptyText : '<%= t('no match') %>',
+			maxHeight : 100
+		},
+		minChars : 1,
+		queryDelay : 300,
+		queryParam : 'filename',
+		store : bomStore,
+		displayField:'filename',
+		valueField:'filename',
+		queryMode: 'remote',
+    	forceSelection: true,
+    	name: 'bom',
+        listeners : {
+		  'beforequery' : function(qe) {
+			this.clearValue();
+			delete this.lastQuery;
+			this.store.proxy.extraParams = {
+			id: rows[0].get("id")
+			}  
+		}}   
+		}
+        ],
+        buttonAlign:"center",
+        buttons: [
+            {
+            text: '<%= t(:save) %>',
+            handler: function(){
+               var form = this.up('form').getForm();
+               var code = form.findField('bom');
+                var id = form.findField('id');
+                if(form.isValid()){
+                    Ext.Ajax.request({
+		    		url: 'bom/bom_show.js',
+		  			params: {filename: code.getValue(), project_id: id.getValue()},
+		    		success: function(response){
+                    edit_window.close();
+                    eval(response.responseText)
+                    },
+                	failure: function(response) {
+                        show_tip_message("false")
+                    }                
+                });
+                }
+            }
+        },{
+            text: '<%= t('reset') %>',
+            handler: function() {
+                this.up('form').getForm().reset();
+                  form.getForm().setValues({
+                id: rows[0].get("id")
+            });
+            }
+        }
+        ]
+        });
+    var edit_window = new Ext.Window({
+        width:400,
+        height:200,
+        resizable:false,
+        layout:"fit",
+        closeAction:'close',
+        plain: true,
+        constrainHeader:true,
+        modal:true,
+        bodyStyle: 'padding:5px;',
+        items:[form]
+    });
+var rows = grid.getSelectionModel().getSelection();
+	if(rows.length==1){
+        form.getForm().setValues({
+            id: rows[0].get("id")
+        });
+        edit_window.show();
+        }
+        else if(rows.length>1)
+        {
+        show_tip_message('<%= t('chose one more data') %>')
+        }
+        else {
+        show_tip_message('<%= t('choseadata') %>')
+        }
+	}
+	else {
+  	}
+};
+
+/////sample action
+function sample_action_handler(type){
+ if(type=='add')
+  {
+      var form = new Ext.form.Panel({
+        width: 300,
+        frame: true,
+        title: '<%= t('upload sample') %>',
+        bodyPadding: '10 10 0',
+        height: 300,
+        defaults: {
+            anchor: '100%',
+            allowBlank: false,
+            msgTarget: 'side',
+            labelWidth: 80
+        },
+        items: [
+        {xtype:"hidden",name: "id"},
+          {
+            xtype: 'filefield',
+            emptyText: '<%= t('select file') %>',
+            fieldLabel: '<%= t('filelocation') %>',
+            name: 'file',
+            buttonText: '',
+            buttonConfig: {
+                iconCls: 'upload-icon'
+            },
+            regex: /(.)+((\.csv)|(\.xls)(\w)?)$/i,
+            regexText: '<%= t('wrong file type') %>'
+        }          
+        ],
+        buttonAlign:"center",
+        buttons: [
+            {
+            text: '<%= t(:save) %>',
+            handler: function(){
+               var form = this.up('form').getForm();
+                if(form.isValid()){
+                    form.submit({
+                        url: 'sample/upload.json',
+                        waitMsg: '<%= t('on upload') %>',
+                        success: function(fp, o) {
+                       	show_tip_message(o.result.message+'<%= t(:uploadsuccess) %>'),			
+                       	form.reset(),										                 						edit_window.close()
+                        }
+                    });
+                }
+             
+            }
+        },{
+            text: '<%= t(:reset) %>',
+            handler: function() {
+                this.up('form').getForm().reset();
+            }
+        }
+        ]
+        });
+    var edit_window = new Ext.Window({
+        width:300,
+        height:180,
+        resizable:false,
+        layout:"fit",
+        closeAction:'close',
+        plain: true,
+        constrainHeader:true,
+        modal:true,
+        bodyStyle: 'padding:5px;',
+        items:[form]
+    });
+   var rows = grid.getSelectionModel().getSelection();
+    if(rows.length==1){
+        form.getForm().setValues({
+            id: rows[0].get("id")
+        });
+        edit_window.show();
+        }
+        else if(rows.length>1)
+        {
+        show_tip_message('<%= t('chose one more data') %>')
+        }
+        else {
+        show_tip_message('<%= t('choseadata') %>')
+        } 
+   }
+  else if(type=='show'){
+   Ext.regModel('sampleInfo', {
+		    fields: [{name: 'filename'}, {name: 'id'}]
+		});
+		
+var sampleStore = Ext.create('Ext.data.Store',{
+	model : 'sampleInfo',
+	proxy: {
+	         type: 'ajax',
+	         url: 'project/samples.json',
+	         reader: {
+	             type: 'json',
+	             root: 'gridData'
+	         }
+	         }
+});
+      var form = new Ext.form.Panel({
+        width: 500,
+        frame: true,
+        title: '<%= t('view bom') %>',
+        bodyPadding: '10 10 0',
+        height: 300,
+        defaults: {
+            anchor: '100%',
+            allowBlank: false,
+            msgTarget: 'side',
+            labelWidth: 80
+        },
+        items: [
+        {xtype:"hidden",name: "id"},
+        {
+		xtype : 'combo',
+		fieldLabel:'<%= t('chose sample') %>',
+		listConfig : {
+			loadingText : 'loading',
+			emptyText : '<%= t('no match') %>',
+			maxHeight : 100
+		},
+		minChars : 1,
+		queryDelay : 300,
+		queryParam : 'filename',
+		store : sampleStore,
+		displayField:'filename',
+		valueField:'filename',
+		queryMode: 'remote',
+        forceSelection: true,
+        name: 'bom',
+        listeners : {
+		  'beforequery' : function(qe) {
+			this.clearValue();
+			delete this.lastQuery;
+			this.store.proxy.extraParams = {
+			id: rows[0].get("id")
+			}  
+		}}   
+		}
+        ],
+        buttonAlign:"center",
+        buttons: [
+            {
+            text: '<%= t(:save) %>',
+            handler: function(){
+               var form = this.up('form').getForm();
+               var code = form.findField('bom');
+                var id = form.findField('id');
+                if(form.isValid()){
+                       Ext.Ajax.request({
+			    		url: 'sample/sample_show.js',
+			  			params: {filename: code.getValue(), project_id: id.getValue()},
+			    		success: function(response){
+                        edit_window.close();
+                        eval(response.responseText)
+	                    },
+		                failure: function(response) {
+		                        show_tip_message("false")
+		                    }                
+	                	});
+                }
+            }
+        },{
+            text: '<%= t('reset') %>',
+            handler: function() {
+                this.up('form').getForm().reset();
+                  form.getForm().setValues({
+                	id: rows[0].get("id")
+            		});
+            }
+        }
+        ]
+        });
+    var edit_window = new Ext.Window({
+        width:400,
+        height:200,
+        resizable:false,
+        layout:"fit",
+        closeAction:'close',
+        plain: true,
+        constrainHeader:true,
+        modal:true,
+        bodyStyle: 'padding:5px;',
+        items:[form]
+    });
+var rows = grid.getSelectionModel().getSelection();
+	if(rows.length==1){
+        form.getForm().setValues({
+            id: rows[0].get("id")
+        });
+        edit_window.show();
+        }
+        else if(rows.length>1)
+        {
+        show_tip_message('<%= t('chose one more data') %>')
+        }
+        else {
+        show_tip_message('<%= t('choseadata') %>')
+        }
+	}
+	else {
+
+	}
+};
+
+var toolbar = new Ext.toolbar.Toolbar({ 
+			dock: 'top',
+			width:300
+		});
+toolbar.add(
+//	{text : '文件',	menu : fileMenu},
+    { text: '<%= t('add bom') %>', iconCls:"silk-user_add", handler: function() {
+		                    boms_action_handler("add")
+		                }},
+    { text: '<%= t('view bom') %>', iconCls:"silk-user_add", handler: function() {
+		                    boms_action_handler("show")
+		                }},
+    { text: '<%= t('add sample') %>', iconCls:"silk-user_add", handler: function() {
+		                    sample_action_handler("add")
+		                }},
+    { text: '<%= t('view sample') %>', iconCls:"silk-user_add", handler: function() {
+		                    sample_action_handler("show")
+		                }}
+//	{ text: '<%= t('view bom') %>', iconCls:"silk-user_add", handler: function() {
+//				                    boms_action_handler("test")
+//	}}	
+		);
+grid.addDocked(toolbar);
+var tabpanel=Ext.create('Ext.tab.Panel', {
+    width: 400,
+    height: 400,
+});
+tabpanel.add({ 
+	title: '<%= t('project list') %>',
+	items : [grid],
+	closable : false,
+    width: 1000,
+    height: 100,
+    frame: true,
+    layout:'fit', 
+});
+var work_space = Ext.getCmp('work-space');
+work_space.removeAll();
+work_space.add(tabpanel);
+work_space.doLayout();

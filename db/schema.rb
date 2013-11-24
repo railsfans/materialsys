@@ -11,7 +11,29 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20131119042724) do
+ActiveRecord::Schema.define(:version => 20131124143931) do
+
+  create_table "bomfiles", :force => true do |t|
+    t.string   "filename"
+    t.integer  "project_id"
+    t.datetime "created_at", :null => false
+    t.datetime "updated_at", :null => false
+  end
+
+  create_table "boms", :force => true do |t|
+    t.string   "name"
+    t.string   "code"
+    t.string   "partref"
+    t.string   "partparams"
+    t.string   "partnum"
+    t.string   "footprint"
+    t.string   "manufacturer"
+    t.string   "module"
+    t.string   "comment"
+    t.integer  "fileid"
+    t.datetime "created_at",   :null => false
+    t.datetime "updated_at",   :null => false
+  end
 
   create_table "codes", :force => true do |t|
     t.string   "name"
@@ -35,6 +57,15 @@ ActiveRecord::Schema.define(:version => 20131119042724) do
     t.string   "comment"
     t.string   "footprint"
     t.integer  "record_id"
+    t.datetime "created_at", :null => false
+    t.datetime "updated_at", :null => false
+  end
+
+  create_table "projects", :force => true do |t|
+    t.string   "name"
+    t.string   "manager"
+    t.text     "describes"
+    t.string   "menber"
     t.datetime "created_at", :null => false
     t.datetime "updated_at", :null => false
   end

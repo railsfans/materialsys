@@ -1,0 +1,13 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/Fixtures.html
+
+one:
+  name: MyString
+  manager: MyString
+  describes: MyText
+  menber: MyString
+
+two:
+  name: MyString
+  manager: MyString
+  describes: MyText
+  menber: MyString

@@ -1,0 +1,69 @@
+var m_store = Ext.create('Ext.data.Store', {
+	fields:['module','partName', 'code','value'],
+	groupField: 'module',//设置分组字段
+	proxy: {
+		type: 'ajax',
+		 url: 'bom/value.json',  // url that will load data with respect to start and limit params
+		  extraParams : {
+            },
+    reader: {
+        type: 'json',
+        root: 'gridData',
+        
+    }
+    }  
+});
+				
+m_store.load({
+    params:{
+       project_id: '<%= params[:project_id] %>',
+       filename:  '<%= params[:bomfile] %>'
+    },
+    callback: function(records, operation, success) {
+       var m_grid=Ext.create('Ext.grid.Panel',{
+			title : '<%= t('module cost list') %>',
+			dockedItems: [
+            {
+            	xtype: 'toolbar',
+            	dock: 'top',
+            	items: [
+        		'->',{text: '<p style="color: red">'+ '<%= t('bom total cost') %>'+'<%= Bom.totalcost(a,b) %>'+'<%= t('yuan') %>'+'</p>',iconCls:"bomcost"},{xtype: 'tbspacer', width: 80}
+            ]
+            }],
+			store: m_store,
+		    features: [Ext.create('Ext.grid.feature.GroupingSummary', {
+		    	groupByText : '用本字段分组',
+		    	showGroupsText : '显示分组',
+		        groupHeaderTpl: '模块名: {name} ({rows.length})', //分组标题模版
+		        startCollapsed: true, //设置初始分组是否收起 
+                        
+		    })],
+			columns: [             
+				{header: '<%= t('module name') %>',  dataIndex: 'module', flex: 1,align: 'center',
+					summaryType: 'count',//求数量
+					summaryRenderer: function(value){
+						return '模块元件数量：'+value
+					}
+				},
+                {header: '<%= t('name') %>',  dataIndex: 'partName',flex: 1,align: 'center'},
+				{header: '<%= t('code') %>',  dataIndex: 'code',flex: 1,align: 'center'},  
+				{header: '<%= t('cost') %>',  dataIndex: 'value', flex: 1,align: 'center',
+					summaryType: 'sum',//求数量
+					summaryRenderer: function(value){
+						return '模块总成本：'+value
+					}
+				}
+			]
+		});
+		var tabPage = tabpanel.add({ 
+			title: '<%= params[:bomfile].split('.')[0] %>',
+			items : [m_grid],
+			closable : true,
+            width: 3000,
+            layout:'fit', 
+		})
+		tabpanel.setActiveTab(tabPage); 
+    },
+    scope: this
+});				
+	

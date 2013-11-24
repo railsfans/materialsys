@@ -400,6 +400,7 @@ def searchmaterial
 		    else if requnit=='M' || requnit=='uF' || requnit=='uH'
 			    reqnum=reqnum.to_i*1000*1000
 		    else if requnit=='F' || requnit=='H'
+                reqnum=reqnum.to_i*1000*1000*1000
 			end
 		    end
 		    end
