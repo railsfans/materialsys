@@ -35,7 +35,7 @@ function checkbomfile(){
                         url: 'manager/bomupload.json',
                         waitMsg: '<%= t('uploading') %>',
                         success: function(fp, o) {
-	                    		show_tip_message(o.result.message+'<%= t(:uploadsuccess) %>');
+	                    		show_tip_message('<%= t('no short') %>');
                                 window.close()
                         },
                         failure: function(fp, o){
@@ -73,14 +73,6 @@ function checkbomfile(){
                                     var shortgrid=Ext.create('Ext.grid.Panel', {
 									    title: '',
 									    store: shortstore,
-                                        dockedItems: [
-								        {
-								            xtype: 'toolbar',
-								            dock: 'bottom',
-								            items: [
-								                { xtype: 'button', text: '<%= t('save') %>',cls: 'startbutton', width: 100, handler: function(){ alert(shortgrid.headerCt.getGridColumns()[0].dataIndex); alert(shortgrid.getStore().getAt(0).get('replacematerial'));  alert(shortgrid.getStore().getCount());}}
-								            ]
-								         }],
 									    columns: [
 									        { header: '<%= t('shortpartparams') %>',  dataIndex: 'partparams', flex: 1, align: 'center'  }, 
 											{ header: '<%= t('replacepartparams') %>',  dataIndex: 'replacematerial', flex: 1, align: 'center'  }, 
@@ -145,7 +137,7 @@ function checkbomfile(){
                                         role_right_store.insert(0, record)
                                         }
                                         else {
-                                         alert("you select multi")
+                                         alert('<%= t(:selectmul) %>')
                                         }           
 											                                    }
 											                                }
@@ -277,7 +269,7 @@ function checkbomfile(){
 											                            text:'<%= t(:saves) %>',
 											                            handler: function() {
 											                               if(undefined==role_right_store.getAt(0)) 
-                                                                           alert("please select one")
+                                                                           alert('<%= t(:pleaseselect) %>')
                                                                            else
                                                                            {
 																		record.set('replacematerial', role_right_grid.getStore().getAt(0).get("partparams").split(' ')[0]+' '+role_right_grid.getStore().getAt(0).get("footprint")+' '+role_right_grid.getStore().getAt(0).get("partparams").split(' ')[1]);
@@ -351,7 +343,7 @@ function checkbomfile(){
                                         role_right_store.insert(0, record)
                                         }
                                         else {
-                                         alert("you select multi")
+                                         alert('<%= t(:selectmul) %>')
                                         }           
 											                                    }
 											                                }
@@ -483,7 +475,7 @@ function checkbomfile(){
 											                            text:'<%= t(:saves) %>',
 											                            handler: function() {
 											                               if(undefined==role_right_store.getAt(0)) 
-                                                                           alert("please select one")
+                                                                           alert('<%= t(:pleaseselect) %>')
                                                                            else
                                                                            {
 																		record.set('replacematerial', role_right_grid.getStore().getAt(0).get("partparams").split(' ')[0]+' '+role_right_grid.getStore().getAt(0).get("footprint")+' '+role_right_grid.getStore().getAt(0).get("partparams").split(' ')[1]);
@@ -568,6 +560,7 @@ function checkbomfile(){
 									            stopSelection: false
 									        }
 									    ],
+                                        /*
 									    tbar : [{
 											text : '取得所选行',
 											handler : function(){
@@ -592,6 +585,7 @@ function checkbomfile(){
 									            show_tip_message("<h1 style='color: red'>hello</h1>")
 											}
 										}],
+                                        */
 									    buttonAlign: 'center',
 									    buttons: [{
 									        text: '<%= t('save') %>',
@@ -702,19 +696,23 @@ function productbomfile(){
                         waitMsg: '<%= t('uploading') %>',
                         success: function(fp, o) {
 	                    		show_tip_message(o.result.message+'<%= t(:uploadsuccess) %>');
-                                window.close()
+                                uploadwindow.close();
+                                window.open('http://192.168.1.13:3000/manager/download1.xls?filename='+o.result.message);
                         },
                         failure: function(fp, o){
+                                show_tip_message("<%= t('please select material') %>")
                                 var mulid='';
                                 for(i=0;i<o.result.arr.length;i++)
                                 {
                                 mulid=mulid+o.result.arr[i];
                                 mulid=mulid+'_';
                                 }
-                                window.close();
+                                uploadwindow.close();
                                 Ext.define('Multimaterial', {
 								        extend: 'Ext.data.Model',
 								        fields: [
+                                            {name: 'partnum', type: 'string'},
+                                            {name: 'manufacturer', type: 'string'},
 								            {name: 'partparams', type: 'string'},
                                             {name: 'footprint', type: 'string'},
 								            {name: 'quantity', type: 'integer'},
@@ -743,7 +741,7 @@ function productbomfile(){
 								});
 								 
 								var mulgrid=Ext.create('Ext.grid.Panel', {
-								    title: 'Simpsons',
+								    title: '',
 								    store: multistore,
                                     split: true,
 									layout: "fit",
@@ -757,17 +755,19 @@ function productbomfile(){
 								    columns: [
 								        { header: 'id',  dataIndex: 'id', hidden: true },
                                         { header: 'index',  dataIndex: 'index', hidden: true },
-								        { header: 'partparams',  dataIndex: 'partparams', flex: 1 },
-								        { header: 'footprint', dataIndex: 'footprint', flex: 1 },
-                                        { header: 'quantity', dataIndex: 'quantity', flex: 1 },
-                                        { header: 'importtime', dataIndex: 'importtime', flex: 1, renderer: function (value, meta, record) {
+								        { header: '<%= t('partparams') %>',  dataIndex: 'partparams', flex: 1 },
+								        { header: '<%= t('footprint') %>', dataIndex: 'footprint', flex: 1 },
+                                        { header: '<%= t('storequantity') %>', dataIndex: 'quantity', flex: 1 },
+                                        { header: '<%= t('partnum') %>',  dataIndex: 'partnum', flex: 1 },
+								        { header: '<%= t('manufacturer') %>', dataIndex: 'manufacturer', flex: 1 },
+                                        { header: '<%= t('importtime') %>', dataIndex: 'importtime', flex: 1, renderer: function (value, meta, record) {
 											return value.split('Z')[0].replace(/[T]/, ' ');
 		                				}},
 								        {
 								            xtype: 'checkcolumn',
-								            header: 'chose?',
+								            header: '<%= t('chose?') %>',
 								            dataIndex: 'checked',
-								            width: 55,
+								            width: 70,
 								            stopSelection: false,
                                             listeners: {
 								            checkchange: function (column, recordIndex, checked) {
@@ -785,6 +785,7 @@ function productbomfile(){
 								        }
 								        }
 								    ],
+                                    /*
 								    tbar : [{
 										text : '取得所选行',
 										handler : function(){
@@ -808,10 +809,37 @@ function productbomfile(){
 								            record.set('indoor',false);
 								            show_tip_message("<h1 style='color: red'>hello</h1>")
 										}
-									}],
+									},{
+										xtype : 'button',
+										text : 'Export',
+										listeners: {
+											click : function() {
+												var exportApiUrl = "http://192.168.1.13:3000/manager/download1.xls?filename="+o.result.message;
+												var body = Ext.getBody();
+
+												var frame = body.createChild({
+												tag:'iframe',
+												cls:'x-hidden',
+												id:'hiddenform-iframe',
+												name:'iframe'
+												});
+
+												var form = body.createChild({
+												tag:'form',
+												cls:'x-hidden',
+												id:'hiddenform-form',
+												action: exportApiUrl,
+												target:'iframe'
+												});
+												form.dom.submit();
+											}
+										}
+									},{ xtype: 'button' , icon: 'assets/disk.png' , text: 'Download' , href: 'http://192.168.1.13:3000/manager/download1.xls?filename='+o.result.message } 
+									],
+                                    */
 								    buttonAlign: 'center',
 								    buttons: [{
-								        text: '<%= t('save') %>',
+								        text: '<%= t('download') %>',
 								        handler: function(){
 								           	var msg = '';
                                             var num=0;
@@ -820,15 +848,29 @@ function productbomfile(){
 								            var record = mulgrid.getStore().getAt(i); 
 								            var data = record.get('checked');
                                             if(data==true){
-								            msg=msg+data;
+								            msg=msg+record.get('id')+'_';
                                             num=num+1
                                             }
 								            }
-                                            if(num==o.result.arr.length)
-								            alert(msg);
+                                            if(num==o.result.arr.length){
+								            Ext.Ajax.request({
+										    url: 'http://192.168.1.13:3000/manager/download1.xls?filename=sheet',
+                                            params: { ids : msg },
+										    success: function(response, opts) {
+												window.open('http://192.168.1.13:3000/manager/download1.xls?filename='+o.result.message+'&ids='+msg);
+										    },
+										    failure: function(response, opts) {
+										       
+										    }
+											});
+                                            }
+                                            else
+                                            alert("<%= t('please select material') %>");
+                                          	
+                                            
 								        }
 								    },{
-								        text: '<%= t('cancel') %>',
+								        text: '<%= t('cancel select') %>',
 								        handler: function() {
 								           for(var i=0; i<mulgrid.getStore().getCount(); i++)
 								            {
@@ -852,13 +894,13 @@ function productbomfile(){
         },{
             text: '<%= t('cancel') %>',
             handler: function() {
-                window.close()
+                uploadwindow.close()
             }
         }]
     });
 
 
-var window = new Ext.Window({
+var uploadwindow = new Ext.Window({
         iconCls:"silk-add",
         width:380,
         height:180,
@@ -873,9 +915,6 @@ var window = new Ext.Window({
     }).show();
 
 };
-
-
-
 		 
 function user_action_handler(type) {
 	var form = new Ext.form.Panel({
@@ -1508,13 +1547,18 @@ var materialgrid=Ext.create('Ext.grid.Panel', {
     }
 	},
     selType: 'rowmodel',
+    listeners: {
+	afterrender: function() {
+	 Ext.getCmp('productbomfile').setDisabled(false)
+	}
+	},
     dockedItems: [
         {
             xtype: 'toolbar',
             dock: 'top',
             items: [
-                { xtype: 'button', text: '<%= t('checkshort') %>',cls: 'startbutton', width: 100, handler: function(){ checkbomfile(); }},
-        		{ xtype: 'button', text: '<%= t('product bom file') %>',cls: 'startbutton', width: 100, handler: function(){ productbomfile(); }},'->',{text: '<p style="color: red">'+ '<%= t('store total cost') %>'+' <%= Store.totalcost() %>'+'<%= t('yuan') %>'+'</p>',iconCls:"bomcost"},{xtype: 'tbspacer', width: 240}
+                { xtype: 'button', text: '<%= t('checkshort') %>',cls: 'startbutton', width: 100, handler: function(){ checkbomfile() }, id: "checkshort" },
+        		{ xtype: 'button', text: '<%= t('product bom file') %>',cls: 'startbutton', width: 100, handler: function(){ productbomfile(); }, id: "productbomfile" },'->',{text: '<p style="color: red">'+ '<%= t('store total cost') %>'+' <%= Store.totalcost() %>'+'<%= t('yuan') %>'+'</p>',iconCls:"bomcost"},{xtype: 'tbspacer', width: 240}
             ]
          },
         {

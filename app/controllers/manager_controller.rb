@@ -301,7 +301,7 @@ end
 
 def bomupload
     flag=false
-    arr=Store.check(params[:file])
+    arr=Stores.check(params[:file])
     if arr==[]
     flag=true
     end
@@ -313,15 +313,34 @@ end
 
 def createbom
     flag=false
-    arr=Store.create(params[:file])
+    arr=Stores.create(params[:file])
     if arr[0]==[]
     flag=true
     end
     $match=arr[1]
+    $matchpartref=arr[2]
+    $matchquantity=arr[3]
     p arr
 	respond_to do |format|
 		format.json { render :json=>{:success=>flag, :arr=>arr[0], :message=>params[:file].original_filename}, :content_type => 'text/html'}
 	end
+end
+
+def download1
+    p $match
+    matchid=[]
+    params[:ids]= params[:ids] || ''
+    params[:ids].split('_').each do |s|
+    matchid<<s
+    end
+    p matchid
+    @store = Store.order('code ASC').find(matchid.concat($match))
+    p @store
+    filename=params[:filename].split('.')[0]
+    response.headers['Content-Disposition'] = 'attachment; filename="' + filename + '.xls"'
+    respond_to do |format|
+      format.xls 
+    end
 end
 
 def searchmul
@@ -338,9 +357,9 @@ for i in  params[:multmaterial].split('_') do
 end
 num=0
     respond_to do |format|
-   		format.json { render :json=>{:totalCount=>Store.find(mularr), :gridData=>Store.order('partparams ASC').find(mularr).collect { |list| num=num+1
+   		format.json { render :json=>{:totalCount=>Store.find(mularr).count, :gridData=>Store.order('partparams ASC').find(mularr).collect { |list| num=num+1
  {:index=>storearr[num-1], :id=>list.id, :quantity=>list.currentquantity, :checked=>'false', :footprint=>list.footprint,
- :partparams=>list.partparams, :importtime=>list.importtime }} } }
+ :partparams=>list.partparams, :importtime=>list.importtime, :manufacturer=>list.manufacturer, :partnum=>list.partnum }} } }
  	end
 end
 
@@ -358,12 +377,14 @@ def searchmaterial
 	arr=[]
     arrid=[]
 	reqnum=params[:partparams].match(/\d+/)[0]
-	requnit=params[:partparams].match(/[R|K|M]/)[0]
-	if requnit=='K'
+	requnit=params[:partparams].match(/[R|K|M|(pF)|(nF)|(uF)|F|(nH)|(uH)|H]/)[0]
+	if requnit=='K' || requnit=='nF' || requnit=='nH'
 	    reqnum=reqnum.to_i*1000
-    else if requnit=='M'
+    else if requnit=='M' || requnit=='uF' || requnit=='uH'
 	    reqnum=reqnum.to_i*1000*1000
+    else if requnit=='F' || requnit=='H'
 	end
+    end
     end
 	Store.all.each do |s|
     	if params[:strict]=='true'
@@ -373,13 +394,15 @@ def searchmaterial
         end
 		if condition
 	    	num=s.partparams.match(reg)[0].match(/\d+/)[0].to_i
-	    	unit=s.partparams.match(reg)[0].match(/[R|K|M]/)[0]
-	    	if unit=='K'
-	    		num=num*1000
-            else if requnit=='M'
-	    		reqnum=reqnum.to_i*1000*1000
+	    	requnit=params[:partparams].match(/[R|K|M|(pF)|(nF)|(uF)|F|(nH)|(uH)|H]/)[0]
+			if requnit=='K' || requnit=='nF' || requnit=='nH'
+			    reqnum=reqnum.to_i*1000
+		    else if requnit=='M' || requnit=='uF' || requnit=='uH'
+			    reqnum=reqnum.to_i*1000*1000
+		    else if requnit=='F' || requnit=='H'
 			end
-            end
+		    end
+		    end
 	    arr<<num
 	    arrid<<s.id
 	    end
@@ -448,14 +471,6 @@ def getscope(arr, target, num)
     end
     end
     return (requestup+requestdown).sort
-end
-
-def left
-@supplier=[]
-totalCount=0
-	respond_to do |format|
-   		format.json { render :json=>{:totalCount=>totalCount, :gridData=>@supplier } }
- 	end
 end
 
 end

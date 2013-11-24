@@ -1,0 +1,57 @@
+﻿<?xml version="1.0"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+  xmlns:o="urn:schemas-microsoft-com:office:office"
+  xmlns:x="urn:schemas-microsoft-com:office:excel"
+  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+  xmlns:html="http://www.w3.org/TR/REC-html40">
+  <ss:Styles>
+        <ss:Style ss:ID="1">
+            <ss:Font ss:Bold="1" ss:Color='BLACK'/>
+            <ss:Alignment ss:Horizontal="Center"/>
+        </ss:Style>
+         <ss:Style ss:ID="2">
+            
+            <ss:Alignment ss:Horizontal="Center"/>
+        </ss:Style>
+    </ss:Styles>
+  <Worksheet ss:Name="Sheet1">
+    <Table>
+       <ss:Column ss:Width="80"/>
+       <ss:Column ss:Width="80"/>
+           <ss:Column ss:Width="80"/>
+           <ss:Column ss:Width="80"/>
+        <ss:Column ss:Width="160"/>
+         <ss:Column ss:Width="160"/>
+           <ss:Column ss:Width="80"/>
+           <ss:Column ss:Width="80"/>
+        <ss:Column ss:Width="80"/>
+           <ss:Column ss:Width="160"/>
+      <Row ss:StyleID="1">
+         <Cell><Data ss:Type="String">序号</Data></Cell>
+        <Cell><Data ss:Type="String">元件名称</Data></Cell>
+        <Cell><Data ss:Type="String">物料号</Data></Cell>
+        <Cell><Data ss:Type="String">参考编号</Data></Cell>
+        <Cell><Data ss:Type="String">元件参数</Data></Cell>
+        <Cell><Data ss:Type="String">元件数量</Data></Cell>
+        <Cell><Data ss:Type="String">元件型号</Data></Cell>
+        <Cell><Data ss:Type="String">元件封装</Data></Cell>
+        <Cell><Data ss:Type="String">制造商</Data></Cell>
+        <Cell><Data ss:Type="String">备注</Data></Cell>
+      </Row>
+    <% @store.each_with_index do |boy, index| %>
+      <Row ss:StyleID="2">
+        <Cell><Data ss:Type="String"><%= index+1 %></Data></Cell>
+       <Cell><Data ss:Type="String"><%= boy.name %></Data></Cell>
+       <Cell><Data ss:Type="String"><%= boy.code %></Data></Cell>
+       <Cell><Data ss:Type="String"><%= $matchpartref[index] %></Data></Cell>
+       <Cell><Data ss:Type="String"><%= boy.partparams %></Data></Cell>
+       <Cell><Data ss:Type="String"><%= $matchquantity[index].to_i %></Data></Cell>
+       <Cell><Data ss:Type="String"><%= boy.partnum %></Data></Cell>
+       <Cell><Data ss:Type="String"><%= boy.footprint %></Data></Cell>
+       <Cell><Data ss:Type="String"><%= boy.manufacturer %></Data></Cell>
+       <Cell><Data ss:Type="String"><%= boy.comment %></Data></Cell>
+      </Row>
+    <% end %>
+    </Table>
+  </Worksheet>
+</Workbook>

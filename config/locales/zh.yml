@@ -214,6 +214,17 @@ zh:
   searchfootprint: "按封装查找"
   availabechose: "可选物料"
   alreadychose: "已选物料"
+  storequantity: "库存数量"
+  chose?: "选择物料"
+  download: "下载BOM表"
+  cancel select: "取消选择"
+  please select material: "请选择物料"
+  mul material: "重复料选择"
+  short material: "缺料选择"
+  saves: "确定"
+  close: "关闭"
+  pleaseselect: "请选择一种替代料"
+  selectmul: "已经选择一种替代料"
   date:
     formats:
       default: "%Y-%m-%d"
