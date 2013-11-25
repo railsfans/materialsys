@@ -1,0 +1,111 @@
+var store = Ext.create('Ext.data.Store', {
+    id:'simpsonsStore',
+    autoLoad: false,
+    fields:['id','footprint','name','quantity','partnum','manufacturer','comment'],
+    pageSize: 20, // items per page
+    proxy: {
+        type: 'ajax',
+        url: 'sample/show.json',  // url that will load data with respect to start and limit params
+        reader: {
+            type: 'json',
+            root: 'gridData',
+            totalProperty: 'totalCount'
+        },
+    extraParams : {
+       	samplefile_id :  <%= Samplefile.where(:project_id=>params[:project_id]).where(:filename=>params[:filename]).first.id %>
+     }
+    }  
+});
+<% samplefile_id=Samplefile.where(:project_id=>params[:project_id]).where(:filename=>params[:filename]).first.id %>;
+// specify segment of data you want to load using params
+
+store.load({
+    params:{
+        start:0,
+        limit: 20,
+    }
+});
+var index = tabpanel.items.length + 1;
+function sample_handler(type)
+{
+  if(type=='delete')
+  {
+      	Ext.MessageBox.confirm('<%= t('delete') %>', '<%= t('are you sure') %>', function(btn){
+		if(btn === 'yes'){
+	        Ext.Ajax.request({
+			    url: 'sample/sample_delete',
+			    params: {id: '<%= params[:project_id] %>', sample: '<%= params[:filename] %>'},
+			    success: function(response){
+	                    show_tip_message("success");
+	                    store.reload();
+	                    tabpanel.remove(Ext.getCmp('<%= params[:project_id]+params[:filename] %>'+index));
+	                    tabpanel.setActiveTab(0);
+	                    },
+                failure: function(response) {
+                        show_tip_message("false")
+                    }                
+            });
+   }
+	else{
+	}
+	});
+  }
+}
+
+
+
+var grid=Ext.create('Ext.grid.Panel', {
+    title: '<%= params[:filename].split('.')[0] %>',
+    store: store,
+    columns: [
+		{
+		xtype: 'rownumberer',
+		width: 60,
+		sortable: false,
+		header: '<%= t(:index) %>', 
+		align: 'center'
+		},
+		{ header: '<%= t(:id) %>',  dataIndex: 'id', flex: 1, align: 'center', hidden: true },
+		{ header: '<%= t(:name) %>',  dataIndex: 'name', flex: 1, align: 'center' },
+		{ header: '<%= t(:quantity) %>',  dataIndex: 'quantity', flex: 1, align: 'center' },
+		{ header: '<%= t(:partNum) %>',  dataIndex: 'partnum', flex: 1, align: 'center' },
+		{ header: '<%= t(:footprint) %>',  dataIndex: 'footprint', flex: 1, align: 'center' },
+		{ header: '<%= t(:manufacturer) %>',  dataIndex: 'manufacturer', flex: 1, align: 'center' },
+		{ header: '<%= t(:comment) %>',  dataIndex: 'comment', flex: 1, align: 'center' },
+    ],
+    width: 400,
+    height: 125,
+    selType: 'rowmodel',
+    dockedItems: [
+	{
+    xtype: 'toolbar',
+    dock: 'top',
+    items: [
+        { text: '<%= t('delete sample') %>', iconCls:"silk-user_add", handler: function() {
+			sample_handler("delete")
+		}}
+       ]
+    },
+	{
+	xtype: 'pagingtoolbar',
+	store: store,   // same store GridPanel is using
+	dock: 'bottom',
+	displayInfo: true,   
+	items:[
+	        '-'
+	        ]       
+    }],
+});
+
+var tabPage = tabpanel.add({ 
+	items : [grid],
+	closable : true,
+	width: 3000,
+	layout:'fit',
+	id: '<%= params[:project_id]+params[:filename] %>'+index,
+	tabConfig: {
+		title: '<%= Samplefile.where(:project_id=>params[:project_id]).where(:filename=>params[:filename]).first.filename.split('.')[0] %>',
+		tooltip: '<%= Samplefile.where(:project_id=>params[:project_id]).where(:filename=>params[:filename]).first.filename.split('.')[0] %>'
+	} 
+})
+tabpanel.setActiveTab(tabPage); 

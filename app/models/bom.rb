@@ -74,5 +74,47 @@ def self.totalcost(filename, id)
 	return sum
 end
 
+def self.updateBom(file, id) 
+	bomfile=Bomfile.find(id)
+	bom=bomfile.update_attributes(:filename=>file.original_filename)
+	Bom.where(:fileid=>id).each do |bom|
+		bom.destroy
+	end
+	spreadsheet = open_spreadsheet(file)
+	header = spreadsheet.row(4)
+	(5..spreadsheet.last_row).each do |i|
+		row = Hash[[header, spreadsheet.row(i)].transpose]
+		Bom.create(:code=>row.to_hash['物料号'], :partref=>row.to_hash['参考编号'],:name=>row.to_hash['元件名称'],:footprint=>row.to_hash['元件封装'],:partnum=>row.to_hash['元件型号'],:manufacturer=>row.to_hash['制造商'],:module=>row.to_hash['模块名称'],:comment=>row.to_hash['备注'],:fileid=>@fileid, :partparams=>row.to_hash['元件参数'])
+	end
+end
+
+def self.cals(id)
+	arr=[]
+	arrs=[]
+	code=[]
+	Bom.where(:fileid=>id).each do |m|
+		if !code.include? m.code
+			code<<m.code
+		end
+	end
+	index=1
+	code.each do |s|
+		arr<<index
+		arr<<s
+		arr<<Bom.where(:fileid=>id).where(:code=>s).collect(&:partref).join(',')
+		arr<<Bom.where(:fileid=>id).where(:code=>s).first.name
+		arr<<Bom.where(:fileid=>id).where(:code=>s).count
+		arr<<Bom.where(:fileid=>id).where(:code=>s).first.partnum
+		arr<<Bom.where(:fileid=>id).where(:code=>s).first.footprint
+		arr<<Bom.where(:fileid=>id).where(:code=>s).first.manufacturer
+		arr<<Bom.where(:fileid=>id).where(:code=>s).first.comment
+		arrs<<arr
+		index=index+1
+		arr=[]
+	end
+	return arrs
+end
+
+
 end
 

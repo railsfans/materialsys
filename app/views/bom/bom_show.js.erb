@@ -36,10 +36,10 @@ function bom_action_handler(type){
         items: [
             {xtype:"hidden",name: "bom_id", value: '<%= Bomfile.where(:project_id=>params[:project_id]).where(:filename=>params[:filename]).first.id %>'},
             {xtype:"hidden",name: "id"},
-            {xtype:"textfield",fieldLabel: '<%= t(:partRef) %>', name: "partRef",anchor:'95%'},
+            {xtype:"textfield",fieldLabel: '<%= t(:partRef) %>', name: "partref",anchor:'95%'},
             {xtype:"textfield",fieldLabel: '<%= t(:name) %>', name: "name",anchor:'95%'},
             {xtype:"textfield",fieldLabel: '<%= t(:partparams) %>', name: "partparams",anchor:'95%'},
-            {xtype:"textfield",fieldLabel: '<%= t(:partNum) %>', name: "partNum", anchor:'95%'},
+            {xtype:"textfield",fieldLabel: '<%= t(:partNum) %>', name: "partnum", anchor:'95%'},
             {xtype:"textfield",fieldLabel: '<%= t(:footprint) %>', name: "footprint", anchor:'95%'},   
             {xtype:"textfield",fieldLabel: '<%= t(:manufacturer) %>', name: "manufacturer", anchor:'95%'},
             {xtype:"textfield",fieldLabel: '<%= t(:module) %>', name: "module", anchor:'95%'},
@@ -61,16 +61,15 @@ function bom_action_handler(type){
 			                        if (obj.success=='codenoexist') {
 		                                show_tip_message('<%= t('code donot exist') %>')
 		                                }
-		                                else if (obj.success){
-			                             edit_window.close();
-			                             store.reload();
-			                             show_tip_message("success")
+	                                else if (obj.success){
+		                             edit_window.close();
+		                             store.reload();
 			                        } else {
 			                            show_tip_message('<%= t('material already exist') %>')
 			                        }
 		                          },
-                      failure: function(response) {
-                              show_tip_message("false")
+                      	failure: function(response) {
+                              	show_tip_message("false")
                           }                
                       });
                       break;
@@ -84,10 +83,10 @@ function bom_action_handler(type){
 		                             edit_window.close();
 		                             store.reload();
 		                        } else {
-		                            show_tip_message("false")
+	                            	show_tip_message("false")
 		                        }
 	                          },
-	                      failure: function(response) {
+	                      	failure: function(response) {
 	                              show_tip_message("false")
 	                          }                
                       });
@@ -128,9 +127,9 @@ function bom_action_handler(type){
 	                bom_id:'<%= Bomfile.where(:project_id=>params[:project_id]).where(:filename=>params[:filename]).first.id %>',
 	                id: rows[0].get('id'),
 	                name:rows[0].get("name"),
-	                partNum:rows[0].get("partnum"),
+	                partnum:rows[0].get("partnum"),
 	                quantity:rows[0].get("quantity"),
-	                partRef: rows[0].get('partRef'),
+	                partref: rows[0].get('partref'),
 	                footprint:rows[0].get("footprint"),
 	                code: rows[0].get('code'),
                     partparams: rows[0].get('partparams'),
@@ -149,7 +148,7 @@ function bom_action_handler(type){
         else
         {
             if(rows.length==1){
-             Ext.MessageBox.confirm('Delete', '<%= t('are you sure') %>', function(btn){
+             Ext.MessageBox.confirm('<%= t('delete') %>', '<%= t('are you sure') %>', function(btn){
 			 if(btn === 'yes'){
                        Ext.Ajax.request({
 			    		url: 'bom/material_delete',
@@ -268,7 +267,7 @@ var grid=Ext.create('Ext.grid.Panel', {
            	{ text: '<%= t('bom cal') %>', iconCls:"silk-user_add", handler: function() {
 				                    boms_handler("help")
 				                }},
-   			{ text: '<%= t('bom max') %>', iconCls:"silk-user_add", handler: function() { boms_handler("max") }}, 				{ text: '<%= t('bom cost cal') %>', iconCls:"silk-user_add", handler: function() { boms_handler("value") }}, '<%= button_to '按参考编号下载', bom_download1_path(:id=>fileid, format: 'xls') %>','<%= button_to '按元件型号下载', bom_download2_path(:id=>fileid, format: 'xls') %>', '<%= button_to '下载全部封装', bom_download_path(:code=>'000',:id=>fileid) %>'
+   			{ text: '<%= t('bom max') %>', iconCls:"silk-user_add", handler: function() { boms_handler("max") }}, 				{ text: '<%= t('bom cost cal') %>', iconCls:"silk-user_add", handler: function() { boms_handler("value") }}, '<%= button_to '按参考编号下载', bom_download1_path(:id=>fileid, format: 'xls') %>','<%= button_to '按元件型号下载', bom_download2_path(:id=>fileid, format: 'xls') %>', '<%= button_to '下载全部封装', bom_download_path(:code=>'000',:id=>fileid), :target => "_blank" %>'
     ]
 	},
     {
@@ -318,7 +317,7 @@ var grid=Ext.create('Ext.grid.Panel', {
     }],
 });
 /////////////////
-var sparam='<%= params[:filename] %>';
+
 function boms_handler(type){
  if(type=='update')
  {
@@ -337,10 +336,10 @@ function boms_handler(type){
         items: [
         {xtype:"hidden",name: "id"},
         {xtype:"hidden",name: "bom", value: '<%= params[:filename] %>' },
-          {
+        {
             xtype: 'filefield',
             fieldLabel: '<%= t('filelocation') %>',
-            name: 'photo',
+            name: 'file',
             buttonText: '',
             buttonConfig: {
                 iconCls: 'upload-icon'
@@ -357,7 +356,7 @@ function boms_handler(type){
                var form = this.up('form').getForm();
                 if(form.isValid()){
                     form.submit({
-                        url: 'bom/update.json',
+                        url: 'bom/bom_update.json',
                         waitMsg: '<%= t('update bom') %>',
                         success: function(fp, o) {
                            	show_tip_message(o.result.message+'<%= t(:uploadsuccess) %>'),
@@ -485,9 +484,9 @@ else if(type=='help'){
     edit_window.show();
 }
 else if(type=='max'){
-	  <% a=params[:filename] %>
-	  <% b=params[:project_id] %>
-	  show_tip_message('<%= t('bom max') %>'+'<%= Bom.max(a,b) %>'+'<%= t('situ') %>')
+	  <% filename=params[:filename] %>
+	  <% project_id=params[:project_id] %>
+	  show_tip_message('<%= t('bom max') %>'+'<%= Bom.max(filename,project_id) %>'+'<%= t('situ') %>')
 }
 else {
    Ext.Ajax.request({

@@ -1,5 +1,5 @@
 var m_store = Ext.create('Ext.data.Store', {
-	fields:['module','partName', 'code','value'],
+	fields:['module','name', 'code','value'],
 	groupField: 'module',//设置分组字段
 	proxy: {
 		type: 'ajax',
@@ -13,7 +13,8 @@ var m_store = Ext.create('Ext.data.Store', {
     }
     }  
 });
-				
+<% filename=params[:bomfile] %>
+<% project_id=params[:project_id] %>				
 m_store.load({
     params:{
        project_id: '<%= params[:project_id] %>',
@@ -27,7 +28,7 @@ m_store.load({
             	xtype: 'toolbar',
             	dock: 'top',
             	items: [
-        		'->',{text: '<p style="color: red">'+ '<%= t('bom total cost') %>'+'<%= Bom.totalcost(a,b) %>'+'<%= t('yuan') %>'+'</p>',iconCls:"bomcost"},{xtype: 'tbspacer', width: 80}
+        		'->',{text: '<p style="color: red">'+ '<%= t('bom total cost') %>'+'<%= Bom.totalcost(filename,project_id) %>'+'<%= t('yuan') %>'+'</p>',iconCls:"bomcost"},{xtype: 'tbspacer', width: 80}
             ]
             }],
 			store: m_store,
@@ -45,7 +46,7 @@ m_store.load({
 						return '模块元件数量：'+value
 					}
 				},
-                {header: '<%= t('name') %>',  dataIndex: 'partName',flex: 1,align: 'center'},
+                {header: '<%= t('name') %>',  dataIndex: 'name',flex: 1,align: 'center'},
 				{header: '<%= t('code') %>',  dataIndex: 'code',flex: 1,align: 'center'},  
 				{header: '<%= t('cost') %>',  dataIndex: 'value', flex: 1,align: 'center',
 					summaryType: 'sum',//求数量

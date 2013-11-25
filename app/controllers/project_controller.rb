@@ -65,5 +65,18 @@ def boms
 	end
 end
 
+def samples
+	params[:filename]=params[:filename] || ""
+	@con=params[:filename]
+	@con="%"+@con+"%"
+	if params[:filename]=="" 
+		@samples=Samplefile.where(:project_id=>params[:id])
+	else
+		@samples=Samplefile.where(:project_id=>params[:id]).where("filename like ?",@con)
+	end
+	respond_to do |format|
+		format.json { render :json=>{ :gridData=>@samples }}
+	end
+end
 
 end

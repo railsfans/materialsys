@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20131124143931) do
+ActiveRecord::Schema.define(:version => 20131125030311) do
 
   create_table "bomfiles", :force => true do |t|
     t.string   "filename"
@@ -77,6 +77,25 @@ ActiveRecord::Schema.define(:version => 20131124143931) do
     t.string   "date"
     t.datetime "created_at", :null => false
     t.datetime "updated_at", :null => false
+  end
+
+  create_table "samplefiles", :force => true do |t|
+    t.string   "filename"
+    t.integer  "project_id"
+    t.datetime "created_at", :null => false
+    t.datetime "updated_at", :null => false
+  end
+
+  create_table "samples", :force => true do |t|
+    t.string   "name"
+    t.string   "footprint"
+    t.integer  "quantity"
+    t.text     "comment"
+    t.string   "manufacturer"
+    t.integer  "samplefileid"
+    t.string   "partnum"
+    t.datetime "created_at",   :null => false
+    t.datetime "updated_at",   :null => false
   end
 
   create_table "sessions", :force => true do |t|
